@@ -5,7 +5,12 @@ import { fileURLToPath } from "node:url";
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const PORT = Number(process.env.PORT ?? 8787);
 export const DATA_DIR = path.resolve(process.env.LEARNTOK_DATA ?? path.join(ROOT, "data"));
-export const COURSES_DIR = path.join(DATA_DIR, "courses");
+export const MEDIA_DIR = path.join(DATA_DIR, "media");
+export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
+export const PUBLIC_URL = (process.env.PUBLIC_URL ?? `http://localhost:${PORT}`).replace(/\/$/, "");
+/** Закрыть регистрацию (например, для приватного инстанса). */
+export const REGISTRATION_OPEN = process.env.LEARNTOK_REGISTRATION !== "closed";
+export const NODE_ENV = process.env.NODE_ENV ?? "development";
 export const MODEL = process.env.LEARNTOK_MODEL ?? "claude-opus-5";
 
 /** claude — основной; local — llama-server с маленькой моделью, пока нет ключа Anthropic. */

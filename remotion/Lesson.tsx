@@ -1,10 +1,16 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Html5Audio, Sequence, interpolate, useCurrentFrame } from "remotion";
-import type { Lesson, WordTiming } from "../shared/schema";
+import type { LessonScene, WordTiming } from "../shared/schema";
 import { FONT, SceneView } from "./scenes";
 import { FPS, LEAD, sceneFrames } from "./timing";
 
-export type LessonProps = { lesson: Omit<Lesson, "mp4">; mediaBase: string };
+export type LessonProps = {
+  lesson: { index: number; title: string; scenes: LessonScene[] };
+  /** Префикс для audio.src; в ленте — "/media/<courseId>/", при рендере — абсолютный URL. */
+  mediaBase: string;
+  /** Query-строка для доступа рендерера к приватным медиа. */
+  mediaQuery?: string;
+};
 
 const PALETTE = ["#8b6cff", "#00c9a7", "#ff8a5c", "#4aa8ff", "#ffc93c", "#ff5c9a"];
 
@@ -133,7 +139,7 @@ const TopBar: React.FC<{ title: string; starts: number[]; durations: number[]; a
   );
 };
 
-export const LessonVideo: React.FC<LessonProps> = ({ lesson, mediaBase }) => {
+export const LessonVideo: React.FC<LessonProps> = ({ lesson, mediaBase, mediaQuery = "" }) => {
   const accent = accentFor(lesson.title);
   const durations = lesson.scenes.map(sceneFrames);
   const starts = durations.map((_, i) => durations.slice(0, i).reduce((a, b) => a + b, 0));
@@ -148,7 +154,7 @@ export const LessonVideo: React.FC<LessonProps> = ({ lesson, mediaBase }) => {
           </FadeOut>
           {scene.audio && (
             <Sequence from={Math.round(LEAD * FPS)}>
-              <Html5Audio src={mediaBase + scene.audio.src} />
+              <Html5Audio src={mediaBase + scene.audio.src + mediaQuery} />
               <Captions words={scene.audio.words} accent={accent} />
             </Sequence>
           )}

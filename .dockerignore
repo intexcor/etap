@@ -1,6 +1,7 @@
-.env
+node_modules
 data
 data.old-json
 dist
 models
-node_modules
+.git
+.env

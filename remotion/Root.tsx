@@ -6,12 +6,8 @@ import { FPS, HEIGHT, WIDTH, lessonFrames } from "./timing";
 const placeholder: LessonProps = {
   mediaBase: "",
   lesson: {
-    id: "placeholder",
     index: 0,
     title: "Пример",
-    goal: "",
-    sourceExcerpt: "",
-    quizzes: [],
     scenes: [{ type: "hook", narration: "", emoji: "🎬", text: "Здесь будет урок", audio: null }],
   },
 };

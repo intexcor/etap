@@ -1,9 +1,18 @@
+// MP4 через Remotion. Headless Chrome берёт аудио с этого же сервера по внутреннему токену.
 import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition } from "@remotion/renderer";
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import type { LessonProps } from "../remotion/Lesson";
+import type { LessonScene } from "../shared/schema";
 import { BROWSER_EXECUTABLE, PORT, ROOT } from "./config";
-import { courseDir, getCourse, saveCourse } from "./store";
+import { q } from "./db";
+import { courseMediaDir } from "./pipeline";
+import { registerHandler, type JobRow } from "./queue";
+
+/** Токен для доступа рендерера к приватным медиа. Живёт, пока жив процесс. */
+export const RENDER_TOKEN = randomBytes(16).toString("hex");
 
 let bundled: Promise<string> | null = null;
 const getBundle = () =>
@@ -12,34 +21,28 @@ const getBundle = () =>
     throw e;
   }));
 
-export const mp4Path = (courseId: string, lessonId: string) =>
-  path.join(courseDir(courseId), "mp4", `${lessonId}.mp4`);
+export const mp4Path = (courseId: string, lessonId: string) => path.join(courseMediaDir(courseId), "mp4", `${lessonId}.mp4`);
 
-// Рендер тяжёлый (Chrome + ffmpeg), поэтому строго по одному.
-let queue: Promise<void> = Promise.resolve();
+type RenderRow = { id: string; course_id: string; position: number; title: string; scenes_json: string; status: string };
 
-export function enqueueRender(courseId: string, lessonId: string) {
-  const course = getCourse(courseId);
-  const lesson = course?.lessons.find((l) => l.id === lessonId);
-  if (!course || !lesson) return false;
-  if (lesson.mp4?.status === "queued" || lesson.mp4?.status === "rendering") return true;
-  lesson.mp4 = { status: "queued", progress: 0 };
-  saveCourse(course);
-  queue = queue.then(() => renderLesson(courseId, lessonId));
-  return true;
-}
+export async function renderLesson(job: JobRow) {
+  const lessonId = job.lesson_id!;
+  const lesson = q.get<RenderRow>("select id, course_id, position, title, scenes_json, status from lessons where id = ?", lessonId);
+  if (!lesson) return;
+  const setMp4 = (status: string, progress: number, error: string | null = null) =>
+    q.run("update lessons set mp4_status = ?, mp4_progress = ?, mp4_error = ?, updated_at = ? where id = ?", status, progress, error, Date.now(), lessonId);
 
-export async function renderLesson(courseId: string, lessonId: string) {
-  const course = getCourse(courseId)!;
-  const lesson = course.lessons.find((l) => l.id === lessonId)!;
-  lesson.mp4 = { status: "rendering", progress: 0 };
-  saveCourse(course);
+  setMp4("rendering", 0);
   try {
+    if (lesson.status !== "ready") throw new Error("Урок ещё не готов");
     const serveUrl = await getBundle();
-    const { mp4: _, ...cleanLesson } = lesson;
-    const inputProps = { lesson: cleanLesson, mediaBase: `http://127.0.0.1:${PORT}/media/${courseId}/` };
+    const inputProps: LessonProps = {
+      lesson: { index: lesson.position, title: lesson.title, scenes: JSON.parse(lesson.scenes_json) as LessonScene[] },
+      mediaBase: `http://127.0.0.1:${PORT}/media/${lesson.course_id}/`,
+      mediaQuery: `?t=${RENDER_TOKEN}`,
+    };
     const composition = await selectComposition({ serveUrl, id: "Lesson", inputProps, browserExecutable: BROWSER_EXECUTABLE });
-    const out = mp4Path(courseId, lessonId);
+    const out = mp4Path(lesson.course_id, lessonId);
     fs.mkdirSync(path.dirname(out), { recursive: true });
     let lastSave = 0;
     await renderMedia({
@@ -52,17 +55,17 @@ export async function renderLesson(courseId: string, lessonId: string) {
       // обычный Chrome вместо chrome-headless-shell не тянет несколько вкладок рендера
       concurrency: BROWSER_EXECUTABLE ? 1 : null,
       onProgress: ({ progress }) => {
-        lesson.mp4 = { status: "rendering", progress };
         if (Date.now() - lastSave > 1000) {
           lastSave = Date.now();
-          saveCourse(course);
+          setMp4("rendering", progress);
         }
       },
     });
-    lesson.mp4 = { status: "done", progress: 1 };
+    setMp4("done", 1);
   } catch (e) {
-    console.error(`Рендер ${courseId}/${lessonId}:`, e);
-    lesson.mp4 = { status: "error", progress: 0, error: e instanceof Error ? e.message : String(e) };
+    setMp4("error", 0, e instanceof Error ? e.message : String(e));
+    throw e;
   }
-  saveCourse(course);
 }
+
+registerHandler("render_lesson", renderLesson);
