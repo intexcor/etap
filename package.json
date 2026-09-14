@@ -1,0 +1,46 @@
+{
+  "name": "learntok",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"tsx watch server/index.ts\" \"vite\"",
+    "build": "vite build",
+    "start": "tsx server/index.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "typecheck": "tsc --noEmit",
+    "render": "tsx scripts/render.ts",
+    "llm": "llama-server -m models/qwen3-0.6b-q8_0.gguf --alias Qwen3-0.6B --host 127.0.0.1 --port 8081 -c 16384 -np 2 -fa on -ctk q8_0 -ctv q8_0 -ngl 99 --jinja"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
+    "@remotion/bundler": "^4.0.524",
+    "@remotion/player": "^4.0.524",
+    "@remotion/renderer": "^4.0.524",
+    "express": "^5.2.1",
+    "katex": "^0.18.7",
+    "multer": "^2.4.0",
+    "nanoid": "^6.0.1",
+    "prism-react-renderer": "^2.4.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.524",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/katex": "^0.16.8",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.5.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^10.0.5",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}
