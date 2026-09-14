@@ -263,7 +263,7 @@ function VideoSlide({
       </div>
 
       {showCourseTitle && (
-        <div className="pointer-events-none absolute left-3 top-14 rounded-full bg-black/40 px-3 py-1 text-xs text-white/80 backdrop-blur">{lesson.courseTitle}</div>
+        <div className="pointer-events-none absolute left-3 top-[6.5rem] rounded-full bg-black/40 px-3 py-1 text-xs text-white/80 backdrop-blur">{lesson.courseTitle}</div>
       )}
 
       {showSource && (
