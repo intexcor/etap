@@ -1,10 +1,10 @@
-// Локальная модель (Qwen3-0.6B в llama-server) вместо Claude — мок, пока нет ключа.
+// Локальная модель (Qwen3-4B в vllm-mlx или Qwen3-0.6B в llama-server) вместо Claude — мок, пока нет ключа.
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
-import { LOCAL_LLM_URL, LOCAL_MAX_CHARS, LOCAL_MODEL } from "./config";
+import { LOCAL_JSON_MODE, LOCAL_LLM_URL, LOCAL_MAX_CHARS, LOCAL_MODEL } from "./config";
 import type { Material } from "./generate";
 
 // Грамматика llama.cpp по этим лимитам не даёт маленькой модели зациклиться
@@ -112,6 +112,10 @@ export async function askLocal<T extends z.ZodType>(
 ): Promise<z.infer<T>> {
   const text = await materialText(material);
   const jsonSchema = constrain(z.toJSONSchema(schema));
+  const grammar = LOCAL_JSON_MODE === "grammar";
+  const systemPrompt = grammar
+    ? system
+    : `${system}\n\nОтвечай ТОЛЬКО валидным JSON по этой схеме, без markdown и пояснений:\n${JSON.stringify(jsonSchema)}`;
   let lastError = "";
 
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -126,9 +130,9 @@ export async function askLocal<T extends z.ZodType>(
           top_p: 0.9,
           max_tokens: 4096,
           chat_template_kwargs: { enable_thinking: false },
-          response_format: { type: "json_schema", json_schema: { name: "result", schema: jsonSchema } },
+          ...(grammar ? { response_format: { type: "json_schema", json_schema: { name: "result", schema: jsonSchema } } } : {}),
           messages: [
-            { role: "system", content: system },
+            { role: "system", content: systemPrompt },
             {
               role: "user",
               content: `Материал «${material.name}»:\n"""\n${text}\n"""\n\n${instruction}\n\nОтветь только JSON по схеме.`,
@@ -141,14 +145,16 @@ export async function askLocal<T extends z.ZodType>(
     }
 
     if (!res.ok) {
-      lastError = `llama-server ${res.status}: ${(await res.text()).slice(0, 300)}`;
+      lastError = `LLM-сервер ${res.status}: ${(await res.text()).slice(0, 300)}`;
       if (res.status < 500) break;
       continue;
     }
 
     const choice = ((await res.json()) as ChatResponse).choices[0];
     try {
-      const parsed = schema.safeParse(JSON.parse(choice?.message.content ?? ""));
+      // без грамматики модель иногда оборачивает ответ в ```json
+      const raw = (choice?.message.content ?? "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      const parsed = schema.safeParse(JSON.parse(raw));
       if (parsed.success) return parsed.data;
       lastError = parsed.error.message.slice(0, 300);
     } catch {

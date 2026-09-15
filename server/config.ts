@@ -20,8 +20,13 @@ export const PROVIDER: "claude" | "local" =
     : process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN
       ? "claude"
       : "local";
-export const LOCAL_LLM_URL = process.env.LOCAL_LLM_URL ?? "http://127.0.0.1:8081";
-export const LOCAL_MODEL = process.env.LOCAL_MODEL ?? "Qwen3-0.6B";
+export const LOCAL_LLM_URL = process.env.LOCAL_LLM_URL ?? "http://127.0.0.1:8082";
+export const LOCAL_MODEL = process.env.LOCAL_MODEL ?? "Qwen3-4B";
+/**
+ * grammar — response_format json_schema (llama.cpp: GBNF на C++, почти бесплатно; vllm-mlx: Python-энфорсер, в 5–10 раз медленнее).
+ * prompt — схема в системном промпте + zod-валидация с повторами; для vllm-mlx и моделей от 4B.
+ */
+export const LOCAL_JSON_MODE: "grammar" | "prompt" = process.env.LOCAL_JSON_MODE === "grammar" ? "grammar" : "prompt";
 export const LOCAL_MAX_CHARS = Number(process.env.LOCAL_MAX_CHARS ?? 8000);
 export const PYTHON = process.env.PYTHON ?? "python3";
 const SYSTEM_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";

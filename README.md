@@ -22,17 +22,28 @@ npm run dev                          # API :8787 + фронт http://localhost:5
 
 Прод: `npm run build && npm start` — Express отдаёт `dist/` и API на одном порту. Или `docker compose up -d` (внутри chromium, ffmpeg, edge-tts).
 
-### Мок без ключа: локальная Qwen3-0.6B
+### Мок без ключа: локальная модель
 
-Если `ANTHROPIC_API_KEY` не задан, сценарии пишет локальная модель через llama-server (`LEARNTOK_PROVIDER=local|claude` форсирует выбор).
-JSON-схема передаётся в llama.cpp как грамматика с лимитами длины, чтобы 0.6B не зацикливалась. PDF читается через `pdftotext`,
-материал обрезается до `LOCAL_MAX_CHARS` (8000). Качество — только для отладки.
+Если `ANTHROPIC_API_KEY` не задан, сценарии пишет локальная модель (`LEARNTOK_PROVIDER=local|claude` форсирует выбор). Два варианта:
+
+| | `npm run llm` (по умолчанию) | `npm run llm:cpp` |
+|---|---|---|
+| Движок | **vllm-mlx** (MLX, Apple Silicon) | llama.cpp |
+| Модель | Qwen3-4B-Instruct 4-bit, `models/qwen3-4b-mlx-4bit` | Qwen3-0.6B Q8, `models/qwen3-0.6b-q8_0.gguf` |
+| JSON | `LOCAL_JSON_MODE=prompt`: схема в промпте + zod-валидация с повторами | `LOCAL_JSON_MODE=grammar`: `response_format` → GBNF-грамматика |
+| Порт | 8082 | 8081 |
+
+Замеры на M4 (24 ГБ), 3 урока параллельно: vllm-mlx + 4B без грамматики — 60 с, 3/3 валидных; llama.cpp + 4B с грамматикой — 95 с;
+vllm-mlx + грамматика — в 5–10 раз медленнее (энфорсер на Python), не использовать. Для llama.cpp задай
+`LOCAL_LLM_URL=http://127.0.0.1:8081 LOCAL_MODEL=Qwen3-0.6B LOCAL_JSON_MODE=grammar`.
 
 ```bash
-python3 llama.cpp/convert_hf_to_gguf.py ~/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/<rev> \
-  --outfile models/qwen3-0.6b-q8_0.gguf --outtype q8_0
-npm run llm   # llama-server на 127.0.0.1:8081
+python3 -m venv .venv && .venv/bin/pip install vllm-mlx
+.venv/bin/python -m mlx_lm convert --hf-path Qwen/Qwen3-4B-Instruct-2507 -q --q-bits 4 --mlx-path models/qwen3-4b-mlx-4bit
+npm run llm
 ```
+
+PDF читается через `pdftotext`, материал обрезается до `LOCAL_MAX_CHARS` (8000). Качество — для отладки, не для учёбы.
 
 ## Архитектура
 
@@ -63,4 +74,4 @@ Remotion бесплатен для физлиц и компаний до 3 че�
 ## Переменные
 
 `ANTHROPIC_API_KEY`, `LEARNTOK_MODEL` (`claude-opus-5`), `LEARNTOK_PROVIDER`, `PORT` (8787), `PUBLIC_URL` (для secure-cookie за https),
-`LEARNTOK_DATA`, `LEARNTOK_REGISTRATION=closed`, `PYTHON`, `REMOTION_BROWSER_EXECUTABLE`, `LOCAL_LLM_URL`, `LOCAL_MODEL`, `LOCAL_MAX_CHARS`, `LOG_LEVEL`.
+`LEARNTOK_DATA`, `LEARNTOK_REGISTRATION=closed`, `PYTHON`, `REMOTION_BROWSER_EXECUTABLE`, `LOCAL_LLM_URL`, `LOCAL_MODEL`, `LOCAL_JSON_MODE`, `LOCAL_MAX_CHARS`, `LOG_LEVEL`.

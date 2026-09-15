@@ -8,7 +8,8 @@
     "start": "NODE_ENV=production tsx server/index.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "typecheck": "tsc --noEmit",
-    "llm": "llama-server -m models/qwen3-0.6b-q8_0.gguf --alias Qwen3-0.6B --host 127.0.0.1 --port 8081 -c 16384 -np 2 -fa on -ctk q8_0 -ctv q8_0 -ngl 99 --jinja"
+    "llm": "./.venv/bin/vllm-mlx serve models/qwen3-4b-mlx-4bit --served-model-name Qwen3-4B --port 8082 --continuous-batching --max-num-seqs 3",
+    "llm:cpp": "llama-server -m models/qwen3-0.6b-q8_0.gguf --alias Qwen3-0.6B --host 127.0.0.1 --port 8081 -c 16384 -np 2 -fa on -ctk q8_0 -ctv q8_0 -ngl 99 --jinja"
   },
   "keywords": [],
   "author": "",
