@@ -9,7 +9,7 @@ import { Card, ErrorBox, Input, Spinner } from "./ui";
 
 type Entry = { question: string; result?: AskResult; error?: string };
 
-export function AskPanel({ courseId, canAsk, pages }: { courseId: string; canAsk: boolean; pages: number }) {
+export function AskPanel({ courseId, canAsk, pages, embedded = false }: { courseId: string; canAsk: boolean; pages: number; embedded?: boolean }) {
   const [question, setQuestion] = useState("");
   const [log, setLog] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
@@ -32,8 +32,8 @@ export function AskPanel({ courseId, canAsk, pages }: { courseId: string; canAsk
     }
   }
 
-  return (
-    <Card className="mt-6">
+  const body = (
+    <>
       <div className="mb-3 flex items-center gap-2 font-bold">
         <MessageCircleQuestion size={18} className="text-accent" /> Спросить материал
         {pages > 0 && <span className="text-xs font-normal text-muted">· {pages} стр.</span>}
@@ -92,6 +92,7 @@ export function AskPanel({ courseId, canAsk, pages }: { courseId: string; canAsk
           </p>
         )}
       </div>
-    </Card>
+    </>
   );
+  return embedded ? <div>{body}</div> : <Card className="mt-6">{body}</Card>;
 }

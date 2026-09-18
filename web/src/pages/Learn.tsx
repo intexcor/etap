@@ -1,75 +1,98 @@
+import { useRef } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import { Button, Centered, ErrorBox, Spinner, formatDue } from "../components/ui";
-import { FeedView } from "../feed/FeedView";
-import { useFeed, useReview } from "../hooks";
+import { useCourse, useFeed, useReview } from "../hooks";
+import { LearnView } from "../learn/LearnView";
 
-export function CourseFeedPage() {
+/** /c/:id — экран обучения курса. */
+export function CourseLearnPage() {
   const { id = "" } = useParams();
+  const course = useCourse(id);
   const feed = useFeed(id);
-  const startAt = useLocation().hash.slice(1) || undefined;
+  const hashStart = useLocation().hash.slice(1) || undefined;
+  // Стартовый урок фиксируем один раз: иначе после обновления прогресса лента прыгала бы к следующему.
+  const startRef = useRef<string | undefined>(undefined);
 
-  if (feed.isPending) {
+  if (course.isPending || feed.isPending) {
     return (
       <Centered>
         <Spinner />
       </Centered>
     );
   }
-  if (feed.error) {
+  const error = course.error ?? feed.error;
+  if (error || !course.data || !feed.data) {
     return (
       <Centered>
-        <ErrorBox>{feed.error.message}</ErrorBox>
+        <ErrorBox>{error?.message ?? "Курс не найден"}</ErrorBox>
         <Button variant="ghost" to="/">
           На главную
         </Button>
       </Centered>
     );
   }
-  const { course, lessons } = feed.data;
-  const busy = course.status === "queued" || course.status === "indexing" || course.status === "outlining" || course.status === "generating";
+  const c = course.data;
+  const lessons = feed.data.lessons;
+  const busy = c.status === "queued" || c.status === "indexing" || c.status === "outlining" || c.status === "generating";
+  if (startRef.current === undefined) {
+    const firstUnfinished = lessons.find((l) => !l.progress.completed);
+    startRef.current = hashStart ?? (c.progress && c.progress.completed > 0 ? firstUnfinished?.id : undefined) ?? "";
+  }
 
   const tail = (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
       {busy ? (
         <>
           <Spinner />
-          <h2 className="text-xl font-bold">Генерирую следующие уроки…</h2>
+          <h2 className="text-xl font-bold">{lessons.length ? "Генерирую следующие уроки…" : "Готовлю первый урок…"}</h2>
           <p className="text-sm text-muted">
-            Готово {course.lessonsReady} из {course.lessonsTotal || "?"}. Лента дополнится сама.
+            {c.lessonsTotal ? `Готово ${c.lessonsReady} из ${c.lessonsTotal}.` : "Разбираю материал на темы."} Экран обновится сам.
           </p>
         </>
-      ) : course.status === "error" && lessons.length === 0 ? (
+      ) : c.status === "error" && lessons.length === 0 ? (
         <>
           <div className="text-5xl">⚠️</div>
           <h2 className="text-xl font-bold">Не получилось</h2>
-          <p className="text-sm text-muted">{course.error}</p>
+          <p className="text-sm text-muted">{c.error}</p>
         </>
       ) : (
         <>
           <div className="text-6xl">🎓</div>
           <h2 className="text-2xl font-extrabold">Курс пройден</h2>
-          {course.progress && course.progress.answered > 0 && (
+          {c.progress && c.progress.answered > 0 && (
             <p className="text-sm text-muted">
-              Верных ответов: {course.progress.correct} из {course.progress.answered}
+              Верных ответов: {c.progress.correct} из {c.progress.answered}
             </p>
           )}
           <p className="text-sm text-muted">Темы вернутся в «Повтор», когда придёт время.</p>
         </>
       )}
       <div className="mt-2 flex gap-2">
-        <Link to={`/c/${course.id}`} className="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold">
-          К курсу
-        </Link>
         <Link to="/" className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white">
           Мои курсы
+        </Link>
+        <Link to="/explore" className="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold">
+          Обзор
         </Link>
       </div>
     </div>
   );
 
-  return <FeedView title={course.title} backTo={`/c/${course.id}`} lessons={lessons} tail={tail} startAt={startAt} />;
+  return (
+    <LearnView
+      key={c.id}
+      mode="course"
+      title={c.title}
+      backTo="/"
+      course={c}
+      lessons={lessons}
+      tail={tail}
+      startAt={startRef.current || undefined}
+    />
+  );
 }
 
+/** /review — лента повторений. */
 export function ReviewPage() {
   const review = useReview();
 
@@ -115,5 +138,5 @@ export function ReviewPage() {
     </div>
   );
 
-  return <FeedView title={`Повторение · ${due.length}`} backTo="/" lessons={due} tail={tail} showCourseTitle />;
+  return <LearnView mode="review" title={`Повторение · ${due.length}`} backTo="/" lessons={due} tail={tail} />;
 }

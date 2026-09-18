@@ -9,10 +9,12 @@ export const FONT = `Inter, "SF Pro Display", -apple-system, "Segoe UI", Roboto,
 const MONO = `"JetBrains Mono", "SF Mono", Menlo, Consolas, monospace`;
 
 const card: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  border: "2px solid rgba(255,255,255,0.09)",
+  background: "linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04))",
+  border: "2px solid rgba(255,255,255,0.12)",
   borderRadius: 36,
   padding: "36px 44px",
+  boxShadow: "0 30px 60px rgba(0,0,0,0.35)",
+  backdropFilter: "blur(10px)",
 };
 
 /** Уменьшает шрифт для длинного текста. */
@@ -158,7 +160,22 @@ export const SceneView: React.FC<{ scene: LessonScene; accent: string; durationI
               at={stagger(i + 1, scene.items.length + 1, dur)}
               style={{ ...card, display: "flex", gap: 30, alignItems: "center", marginBottom: 24, fontSize: 52, lineHeight: 1.2 }}
             >
-              <span style={{ width: 22, height: 22, borderRadius: 6, background: accent, flexShrink: 0 }} />
+              <span
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 20,
+                  background: accent,
+                  color: "#0a0b14",
+                  fontWeight: 900,
+                  fontSize: 34,
+                  display: "grid",
+                  placeItems: "center",
+                  flexShrink: 0,
+                }}
+              >
+                {i + 1}
+              </span>
               <span>
                 <Rich text={item} />
               </span>
@@ -351,7 +368,7 @@ export const SceneView: React.FC<{ scene: LessonScene; accent: string; durationI
   }
 
   return (
-    <AbsoluteFill style={{ padding: "270px 80px 620px", justifyContent: "center", fontFamily: FONT, color: "#fff" }}>
+    <AbsoluteFill style={{ padding: "300px 80px 640px", justifyContent: "center", fontFamily: FONT, color: "#fff" }}>
       {body}
     </AbsoluteFill>
   );

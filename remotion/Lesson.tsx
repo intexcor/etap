@@ -5,7 +5,7 @@ import { FONT, SceneView } from "./scenes";
 import { FPS, LEAD, sceneFrames } from "./timing";
 
 export type LessonProps = {
-  lesson: { index: number; title: string; scenes: LessonScene[] };
+  lesson: { index: number; title: string; scenes: LessonScene[]; courseTitle?: string };
   /** Префикс для audio.src; в ленте — "/media/<courseId>/", при рендере — абсолютный URL. */
   mediaBase: string;
   /** Query-строка для доступа рендерера к приватным медиа. */
@@ -20,20 +20,23 @@ export function accentFor(seed: string) {
   return PALETTE[h % PALETTE.length];
 }
 
+/** Фон: глубокий градиент, два медленно плывущих пятна акцента, сетка и виньетка снизу под субтитры. */
 const Backdrop: React.FC<{ accent: string }> = ({ accent }) => {
   const frame = useCurrentFrame();
-  const drift = Math.sin(frame / 80) * 60;
+  const drift = Math.sin(frame / 90) * 70;
+  const drift2 = Math.cos(frame / 110) * 50;
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ background: "linear-gradient(180deg, #0d0f1f 0%, #0a0b14 60%, #07080f 100%)" }}>
       <div
         style={{
           position: "absolute",
-          width: 1200,
-          height: 1200,
-          left: -500 + drift,
-          top: -450,
+          width: 1300,
+          height: 1300,
+          left: -520 + drift,
+          top: -520 + drift2,
           borderRadius: "50%",
-          background: `radial-gradient(circle, ${accent}55, transparent 65%)`,
+          background: `radial-gradient(circle, ${accent}66 0%, ${accent}22 35%, transparent 65%)`,
+          filter: "blur(10px)",
         }}
       />
       <div
@@ -41,25 +44,35 @@ const Backdrop: React.FC<{ accent: string }> = ({ accent }) => {
           position: "absolute",
           width: 1100,
           height: 1100,
-          right: -520 - drift,
-          bottom: -380,
+          right: -560 - drift,
+          bottom: -300 + drift2,
           borderRadius: "50%",
-          background: `radial-gradient(circle, ${accent}33, transparent 65%)`,
+          background: `radial-gradient(circle, ${accent}44 0%, transparent 62%)`,
+          filter: "blur(10px)",
         }}
       />
+      <AbsoluteFill
+        style={{
+          backgroundImage: "linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px)",
+          backgroundSize: "90px 90px",
+          maskImage: "radial-gradient(circle at 50% 40%, black 0%, transparent 80%)",
+          WebkitMaskImage: "radial-gradient(circle at 50% 40%, black 0%, transparent 80%)",
+        }}
+      />
+      <AbsoluteFill style={{ background: "linear-gradient(180deg, transparent 55%, rgba(5,6,12,0.75) 100%)" }} />
     </AbsoluteFill>
   );
 };
 
 type WordGroup = { start: number; words: WordTiming[] };
 
-function groupWords(words: WordTiming[], maxChars = 24): WordGroup[] {
+function groupWords(words: WordTiming[], maxChars = 30): WordGroup[] {
   const groups: WordGroup[] = [];
   let current: WordGroup | null = null;
   let chars = 0;
   for (const w of words) {
     const prev = current?.words.at(-1)?.text ?? "";
-    if (!current || chars + w.text.length > maxChars || /[.!?…:;]$/.test(prev)) {
+    if (!current || chars + w.text.length > maxChars || /[.!?…]$/.test(prev)) {
       current = { start: w.start, words: [] };
       groups.push(current);
       chars = 0;
@@ -70,22 +83,27 @@ function groupWords(words: WordTiming[], maxChars = 24): WordGroup[] {
   return groups;
 }
 
+/** Субтитры-караоке в плашке: текущее слово подсвечено акцентом. */
 const Captions: React.FC<{ words: WordTiming[]; accent: string }> = ({ words, accent }) => {
   const t = useCurrentFrame() / FPS;
   const groups = useMemo(() => groupWords(words), [words]);
   const group = groups.findLast((g) => g.start <= t + 0.05);
   if (!group) return null;
   return (
-    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 400 }}>
+    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 330 }}>
       <div
         style={{
-          maxWidth: 960,
+          maxWidth: 940,
           textAlign: "center",
           fontFamily: FONT,
-          fontSize: 64,
+          fontSize: 58,
           fontWeight: 800,
-          lineHeight: 1.3,
-          textShadow: "0 4px 18px rgba(0,0,0,0.7)",
+          lineHeight: 1.35,
+          padding: "22px 36px",
+          borderRadius: 32,
+          background: "rgba(8,9,18,0.62)",
+          border: "2px solid rgba(255,255,255,0.08)",
+          backdropFilter: "blur(14px)",
         }}
       >
         {group.words.map((w, i) => {
@@ -95,12 +113,12 @@ const Captions: React.FC<{ words: WordTiming[]; accent: string }> = ({ words, ac
               key={i}
               style={{
                 display: "inline-block",
-                margin: "0 4px",
-                padding: "0 12px",
-                borderRadius: 16,
-                color: active ? "#0a0b14" : t >= w.start ? "#fff" : "rgba(255,255,255,0.55)",
+                margin: "0 3px",
+                padding: "0 10px",
+                borderRadius: 14,
+                color: active ? "#0a0b14" : t >= w.start ? "#fff" : "rgba(255,255,255,0.5)",
                 background: active ? accent : "transparent",
-                textShadow: active ? "none" : undefined,
+                transition: "background 80ms",
               }}
             >
               {w.text}
@@ -112,18 +130,20 @@ const Captions: React.FC<{ words: WordTiming[]; accent: string }> = ({ words, ac
   );
 };
 
-const TopBar: React.FC<{ title: string; starts: number[]; durations: number[]; accent: string }> = ({
+const TopBar: React.FC<{ title: string; courseTitle?: string; index: number; starts: number[]; durations: number[]; accent: string }> = ({
   title,
+  courseTitle,
+  index,
   starts,
   durations,
   accent,
 }) => {
   const frame = useCurrentFrame();
   return (
-    <AbsoluteFill style={{ padding: "120px 60px 0", fontFamily: FONT }}>
+    <AbsoluteFill style={{ padding: "100px 60px 0", fontFamily: FONT }}>
       <div style={{ display: "flex", gap: 10 }}>
         {starts.map((start, i) => (
-          <div key={i} style={{ flex: 1, height: 8, borderRadius: 4, background: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
+          <div key={i} style={{ flex: 1, height: 10, borderRadius: 5, background: "rgba(255,255,255,0.16)", overflow: "hidden" }}>
             <div
               style={{
                 height: "100%",
@@ -134,7 +154,30 @@ const TopBar: React.FC<{ title: string; starts: number[]; durations: number[]; a
           </div>
         ))}
       </div>
-      <div style={{ marginTop: 30, fontSize: 38, fontWeight: 700, color: "rgba(255,255,255,0.75)" }}>{title}</div>
+      <div style={{ marginTop: 34, display: "flex", alignItems: "center", gap: 18 }}>
+        <span
+          style={{
+            background: accent,
+            color: "#0a0b14",
+            fontSize: 26,
+            fontWeight: 900,
+            letterSpacing: 2,
+            padding: "8px 18px",
+            borderRadius: 999,
+            textTransform: "uppercase",
+          }}
+        >
+          Урок {index + 1}
+        </span>
+        <span style={{ fontSize: 34, fontWeight: 700, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {title}
+        </span>
+      </div>
+      {courseTitle && (
+        <div style={{ marginTop: 10, fontSize: 26, color: "rgba(255,255,255,0.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {courseTitle}
+        </div>
+      )}
     </AbsoluteFill>
   );
 };
@@ -160,7 +203,10 @@ export const LessonVideo: React.FC<LessonProps> = ({ lesson, mediaBase, mediaQue
           )}
         </Sequence>
       ))}
-      <TopBar title={`${lesson.index + 1}. ${lesson.title}`} starts={starts} durations={durations} accent={accent} />
+      <TopBar title={lesson.title} courseTitle={lesson.courseTitle} index={lesson.index} starts={starts} durations={durations} accent={accent} />
+      <div style={{ position: "absolute", right: 60, bottom: 90, fontFamily: FONT, fontSize: 26, fontWeight: 800, color: "rgba(255,255,255,0.35)" }}>
+        Learn<span style={{ color: accent }}>Tok</span>
+      </div>
     </AbsoluteFill>
   );
 };

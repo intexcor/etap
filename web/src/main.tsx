@@ -7,8 +7,7 @@ import { Shell } from "./components/Shell";
 import { Centered, Spinner } from "./components/ui";
 import { useMe } from "./hooks";
 import { AuthPage } from "./pages/Auth";
-import { CoursePage } from "./pages/Course";
-import { CourseFeedPage, ReviewPage } from "./pages/FeedPages";
+import { CourseLearnPage, ReviewPage } from "./pages/Learn";
 import { LandingPage } from "./pages/Landing";
 import { ExplorePage, LibraryPage } from "./pages/Library";
 import { NewCoursePage } from "./pages/NewCourse";
@@ -38,6 +37,11 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return children;
 }
 
+function FeedRedirect() {
+  const { pathname, hash } = useLocation();
+  return <Navigate to={pathname.replace(/\/feed$/, "") + hash} replace />;
+}
+
 /** Главная: лендинг для гостей, библиотека для вошедших. */
 function Home() {
   const me = useMe();
@@ -63,10 +67,10 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route path="/register" element={<AuthPage mode="register" />} />
-      {/* Лента без оболочки: полноэкранная. Курсы по ссылке доступны без входа. */}
-      <Route path="/c/:id/feed" element={<CourseFeedPage />} />
+      {/* Экран обучения без оболочки — со своими панелями. Курсы по ссылке доступны без входа. */}
+      <Route path="/c/:id" element={<CourseLearnPage />} />
+      <Route path="/c/:id/feed" element={<FeedRedirect />} />
       <Route element={<Shell />}>
-        <Route path="/c/:id" element={<CoursePage />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route
           path="/new"

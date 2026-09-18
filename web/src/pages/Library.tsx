@@ -1,4 +1,5 @@
-import { Plus } from "lucide-react";
+import { Play, Plus } from "lucide-react";
+import { Link } from "react-router";
 import { CourseCard } from "../components/CourseCard";
 import { Button, Centered, ErrorBox, Notice, Page, Spinner } from "../components/ui";
 import { useConfig, useCourses, useExplore } from "../hooks";
@@ -39,6 +40,23 @@ export function LibraryPage() {
           <Button to="/new">Создать первый курс</Button>
         </Centered>
       )}
+      {(() => {
+        const cont = courses.data?.find((c) => c.status === "ready" && c.progress && c.progress.completed > 0 && c.progress.completed < c.lessonsReady);
+        return cont ? (
+          <Link to={`/c/${cont.id}`} className="mb-4 flex items-center gap-4 rounded-2xl border border-accent/40 bg-accent/10 p-4 hover:bg-accent/15">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-white">
+              <Play size={18} fill="currentColor" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-xs font-bold uppercase tracking-widest text-accent">Продолжить</span>
+              <span className="block truncate font-bold">{cont.title}</span>
+              <span className="block text-xs text-muted">
+                Урок {cont.progress!.completed + 1} из {cont.lessonsReady}
+              </span>
+            </span>
+          </Link>
+        ) : null;
+      })()}
       <div className="grid gap-3 sm:grid-cols-2">{courses.data?.map((c) => <CourseCard key={c.id} course={c} />)}</div>
     </Page>
   );
