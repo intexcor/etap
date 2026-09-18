@@ -26,7 +26,7 @@ export function CourseFeedPage() {
     );
   }
   const { course, lessons } = feed.data;
-  const busy = course.status === "queued" || course.status === "outlining" || course.status === "generating";
+  const busy = course.status === "queued" || course.status === "indexing" || course.status === "outlining" || course.status === "generating";
 
   const tail = (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">

@@ -4,9 +4,10 @@ import fs from "node:fs";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import type { Feed } from "../../shared/api";
+import { askMaterial } from "../ask";
 import { requireUser } from "../auth";
 import { q, transaction } from "../db";
-import { badRequest, parseBody } from "../errors";
+import { HttpError, badRequest, parseBody } from "../errors";
 import { courseMediaDir, saveUpload } from "../pipeline";
 import { enqueue, hasActiveJob } from "../queue";
 import { getCourseRow, listLessonRows, listOwnCourses, listPublicCourses, requireCourse, toCourseDetail, toCourseSummary, toFeedLesson } from "../repo";
@@ -103,6 +104,19 @@ coursesRouter.post("/courses/:id/retry", requireUser, (req, res) => {
     enqueue("generate_course", { courseId: course.id });
   }
   res.json(toCourseSummary(getCourseRow(course.id)!, req.user!.id));
+});
+
+// Простой лимит на вопросы: 30 в 10 минут на пользователя.
+const askWindow = new Map<string, number[]>();
+
+coursesRouter.post("/courses/:id/ask", requireUser, async (req, res) => {
+  const course = requireCourse(String(req.params.id), req.user!.id);
+  const { question } = parseBody(z.object({ question: z.string().trim().min(3).max(500) }), req.body);
+  const now = Date.now();
+  const recent = (askWindow.get(req.user!.id) ?? []).filter((t) => now - t < 10 * 60 * 1000);
+  if (recent.length >= 30) throw new HttpError(429, "Слишком много вопросов, подожди немного");
+  askWindow.set(req.user!.id, [...recent, now]);
+  res.json(await askMaterial(course.id, question));
 });
 
 coursesRouter.get("/courses/:id/feed", (req, res) => {

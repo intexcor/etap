@@ -46,6 +46,22 @@ python3 -m venv .venv && .venv/bin/pip install vllm-mlx
 npm run llm
 ```
 
+### RAG: индекс материала и «Спросить материал»
+
+При создании курса материал делится на страницы (`pdftotext`, `\f`) и чанки ~700 символов, чанки получают эмбеддинги
+(Qwen3-Embedding-0.6B через `llama-server --embedding`, `npm run embed`, :8083) и лежат в SQLite (`chunks`, float32 blob).
+Поиск — косинус по нормированным векторам в JS; без эмбеддинг-сервера — лексический по тем же чанкам.
+
+- Локальные модели получают на каждый урок RAG-контекст по теме, а не первые 8000 символов.
+- `POST /api/courses/:id/ask {question}` — ответ по материалу со ссылками `[стр. N]` (Claude / локальная модель;
+  без LLM — сами фрагменты). На странице курса — панель «Спросить материал».
+
+```bash
+python3 llama.cpp/convert_hf_to_gguf.py ~/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-0.6B/snapshots/<rev> \
+  --outfile models/qwen3-embedding-0.6b-q8_0.gguf --outtype q8_0
+npm run embed
+```
+
 ### Разработка сцен
 
 `npm run studio` — Remotion Studio с композицией `Lesson`: сцены `remotion/scenes.tsx` правятся с живым предпросмотром,
@@ -61,15 +77,16 @@ npm run llm
 | `server/auth.ts` | Пароли scrypt, сессии в cookie (httpOnly), защита от перебора |
 | `server/queue.ts` | Персистентная очередь задач (generate_course, render_lesson); прерванные задачи перезапускаются после рестарта |
 | `server/pipeline.ts` | Генерация курса, идемпотентна: `retry` доделывает только неготовые уроки |
-| `server/generate.ts`, `local.ts`, `extractive.ts` | Claude / локальная модель / Ollama; retrieval и extractive-выжимка без LLM (из прототипа ETAP) |
+| `server/generate.ts`, `local.ts`, `extractive.ts` | Claude / локальная модель / Ollama; extractive-выжимка без LLM (из прототипа ETAP) |
+| `server/rag.ts`, `embed.ts`, `ask.ts` | Индекс материала (страницы → чанки → эмбеддинги), семантический поиск, ответы по материалу с номерами страниц |
 | `server/tts.ts`, `tts.py` | Озвучка каждой сцены, тайминги слов для караоке-субтитров |
 | `server/render.ts` | MP4 1080×1920 через Remotion; аудио берётся с этого же сервера по внутреннему токену |
 | `server/review.ts` | Интервальные повторения (SM-2 на уровне урока), двигает только первая попытка |
 | `server/routes/` | `/api/auth/*`, `/api/me*`, `/api/courses*`, `/api/lessons/*`, `/api/review`, `/media/*` |
 | `remotion/` | Видео: сцены, анимации, субтитры, прогресс |
-| `web/src/` | React + Vite + Tailwind 4 + React Router + TanStack Query, PWA. Страницы: курсы, обзор, создание, курс, лента, повтор, профиль |
+| `web/src/` | React + Vite + Tailwind 4 + React Router + TanStack Query, PWA. Страницы: лендинг (для гостей), курсы, обзор, создание, курс + «Спросить материал», лента, повтор, профиль |
 
-Данные: `data/learntok.sqlite`, `data/media/<courseId>/{audio,mp4}`, `data/uploads/<courseId>.pdf|txt`.
+Данные: `data/learntok.sqlite` (в т.ч. чанки с эмбеддингами), `data/media/<courseId>/{audio,mp4}`, `data/uploads/<courseId>.pdf|txt`.
 
 ## MP4
 
@@ -80,4 +97,4 @@ Remotion бесплатен для физлиц и компаний до 3 че�
 ## Переменные
 
 `ANTHROPIC_API_KEY`, `LEARNTOK_MODEL` (`claude-opus-5`), `LEARNTOK_PROVIDER`, `PORT` (8787), `PUBLIC_URL` (для secure-cookie за https),
-`LEARNTOK_DATA`, `LEARNTOK_REGISTRATION=closed`, `LEARNTOK_LLM_FALLBACK=off`, `PYTHON`, `REMOTION_BROWSER_EXECUTABLE`, `LOCAL_LLM_URL`, `LOCAL_MODEL`, `LOCAL_JSON_MODE`, `LOCAL_MAX_CHARS`, `LOG_LEVEL`.
+`LEARNTOK_DATA`, `LEARNTOK_REGISTRATION=closed`, `LEARNTOK_LLM_FALLBACK=off`, `PYTHON`, `REMOTION_BROWSER_EXECUTABLE`, `LOCAL_LLM_URL`, `LOCAL_MODEL`, `LOCAL_JSON_MODE`, `LOCAL_MAX_CHARS`, `EMBED_URL`, `EMBED_MODEL`, `LOG_LEVEL`.

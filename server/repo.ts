@@ -30,6 +30,7 @@ export type CourseRow = {
   updated_at: number;
   lessons_total: number;
   lessons_ready: number;
+  pages: number;
 };
 
 export type LessonRow = {
@@ -118,6 +119,7 @@ export function toCourseSummary(c: CourseRow, userId?: string): CourseSummary {
     isOwner: c.owner_id === userId,
     lessonsTotal: c.lessons_total,
     lessonsReady: c.lessons_ready,
+    pages: c.pages,
     progress: userId ? courseProgress(c.id, userId) : undefined,
   };
 }

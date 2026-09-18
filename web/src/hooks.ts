@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CourseDetail, CourseSummary } from "../../shared/api";
 import { api } from "./api";
 
-const isBusy = (c: Pick<CourseSummary, "status">) => c.status === "queued" || c.status === "outlining" || c.status === "generating";
+const isBusy = (c: Pick<CourseSummary, "status">) => c.status === "queued" || c.status === "indexing" || c.status === "outlining" || c.status === "generating";
 
 export const useConfig = () => useQuery({ queryKey: ["config"], queryFn: api.config, staleTime: Infinity });
 

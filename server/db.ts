@@ -108,6 +108,20 @@ const MIGRATIONS: string[] = [
   );
   create index reviews_due on reviews(user_id, due_at);
   `,
+  `
+  create table chunks (
+    id integer primary key autoincrement,
+    course_id text not null references courses(id) on delete cascade,
+    position integer not null,
+    page integer not null default 1,
+    text text not null,
+    embedding blob                                -- float32[], L2-нормированный; null = только лексический поиск
+  );
+  create index chunks_course on chunks(course_id, position);
+  alter table courses add column pages integer not null default 0;
+  alter table courses add column chunk_count integer not null default 0;
+  alter table courses add column indexed_at integer;
+  `,
 ];
 
 let db: DatabaseSync | null = null;

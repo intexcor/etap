@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { CourseDetail, LessonSummary } from "../../../shared/api";
 import { api } from "../api";
+import { AskPanel } from "../components/AskPanel";
 import { STATUS_LABEL, VISIBILITY, plural } from "../components/CourseCard";
 import { Button, Card, Centered, ErrorBox, Page, ProgressBar, Select, Spinner, formatDuration, formatDue } from "../components/ui";
 import { useCourse, useMe } from "../hooks";
@@ -31,7 +32,7 @@ export function CoursePage() {
     );
   }
   const c = course.data;
-  const busy = c.status === "queued" || c.status === "outlining" || c.status === "generating";
+  const busy = c.status === "queued" || c.status === "indexing" || c.status === "outlining" || c.status === "generating";
   const ready = c.lessons.filter((l) => l.status === "ready");
   const firstUnfinished = ready.find((l) => !l.progress?.completed) ?? ready[0];
   const refresh = () => qc.invalidateQueries({ queryKey: ["course", id] });
@@ -148,6 +149,8 @@ export function CoursePage() {
           <LessonRow key={l.id} lesson={l} courseId={c.id} isOwner={c.isOwner} onChange={refresh} />
         ))}
       </div>
+
+      {c.status !== "queued" && c.status !== "indexing" && <AskPanel courseId={c.id} canAsk={!!me.data} pages={c.pages} />}
     </Page>
   );
 }

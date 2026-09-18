@@ -1,4 +1,5 @@
 import { Compass, Library, Plus, RotateCcw, User } from "lucide-react";
+import type { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router";
 import { useMe, useReview } from "../hooks";
 
@@ -10,7 +11,7 @@ const tabs = [
   { to: "/profile", label: "Профиль", icon: User },
 ];
 
-export function Shell() {
+export function Shell({ children }: { children?: ReactNode }) {
   const me = useMe();
   const review = useReview();
   const due = me.data ? (review.data?.dueCount ?? 0) : 0;
@@ -39,9 +40,7 @@ export function Shell() {
         </nav>
       </aside>
 
-      <main className="min-w-0 flex-1">
-        <Outlet />
-      </main>
+      <main className="min-w-0 flex-1">{children ?? <Outlet />}</main>
 
       <nav className="pb-safe fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-panel/95 backdrop-blur md:hidden">
         {tabs.map((t) => (

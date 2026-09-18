@@ -9,6 +9,7 @@ import { q, transaction } from "./db";
 import { describeError, generateLesson, generateOutline, type Material } from "./generate";
 import { log } from "./log";
 import { registerHandler, type JobRow } from "./queue";
+import { indexCourse, isIndexed } from "./rag";
 import { pickVoice, synthesizeScenes } from "./tts";
 
 const LESSON_CONCURRENCY = 3;
@@ -23,11 +24,11 @@ export function saveUpload(courseId: string, file: { name: string; buffer: Buffe
   return target;
 }
 
-function loadMaterial(sourcePath: string, name: string): Material {
+export function loadMaterial(sourcePath: string, name: string, courseId?: string): Material {
   if (!fs.existsSync(sourcePath)) throw new Error("Исходный файл материала не найден");
   return sourcePath.endsWith(".pdf")
-    ? { kind: "pdf", name, base64: fs.readFileSync(sourcePath).toString("base64") }
-    : { kind: "text", name, text: fs.readFileSync(sourcePath, "utf8") };
+    ? { kind: "pdf", name, base64: fs.readFileSync(sourcePath).toString("base64"), courseId }
+    : { kind: "text", name, text: fs.readFileSync(sourcePath, "utf8"), courseId };
 }
 
 // Убираем повторы вариантов (слабые модели дублируют) и перемешиваем:
@@ -77,7 +78,12 @@ async function generateCourse(job: JobRow, report: (p: number) => void) {
   };
 
   try {
-    const material = loadMaterial(course.source_path ?? "", course.source_name);
+    const material = loadMaterial(course.source_path ?? "", course.source_name, courseId);
+    // Индекс для RAG: контекст уроков у локальных моделей и «Спросить материал».
+    if (!isIndexed(courseId)) {
+      setCourse({ status: "indexing" });
+      await indexCourse(courseId, material);
+    }
 
     let outline: Outline;
     if (course.outline_json) {

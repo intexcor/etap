@@ -9,6 +9,7 @@ import { useMe } from "./hooks";
 import { AuthPage } from "./pages/Auth";
 import { CoursePage } from "./pages/Course";
 import { CourseFeedPage, ReviewPage } from "./pages/FeedPages";
+import { LandingPage } from "./pages/Landing";
 import { ExplorePage, LibraryPage } from "./pages/Library";
 import { NewCoursePage } from "./pages/NewCourse";
 import { ProfilePage } from "./pages/Profile";
@@ -37,9 +38,29 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return children;
 }
 
+/** Главная: лендинг для гостей, библиотека для вошедших. */
+function Home() {
+  const me = useMe();
+  if (me.isPending) {
+    return (
+      <Centered>
+        <Spinner />
+      </Centered>
+    );
+  }
+  return me.data ? (
+    <Shell>
+      <LibraryPage />
+    </Shell>
+  ) : (
+    <LandingPage />
+  );
+}
+
 function App() {
   return (
     <Routes>
+      <Route path="/" element={<Home />} />
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route path="/register" element={<AuthPage mode="register" />} />
       {/* Лента без оболочки: полноэкранная. Курсы по ссылке доступны без входа. */}
@@ -47,14 +68,6 @@ function App() {
       <Route element={<Shell />}>
         <Route path="/c/:id" element={<CoursePage />} />
         <Route path="/explore" element={<ExplorePage />} />
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <LibraryPage />
-            </RequireAuth>
-          }
-        />
         <Route
           path="/new"
           element={

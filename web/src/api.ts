@@ -1,4 +1,4 @@
-import type { AnswerResult, AppConfig, CourseDetail, CourseSummary, Feed, LessonSummary, ReviewFeed, Stats, User } from "../../shared/api";
+import type { AnswerResult, AppConfig, AskResult, CourseDetail, CourseSummary, Feed, LessonSummary, ReviewFeed, Stats, User } from "../../shared/api";
 
 export class ApiError extends Error {
   constructor(
@@ -45,6 +45,7 @@ export const api = {
   deleteCourse: (id: string) => request<{ ok: true }>(`/api/courses/${id}`, json("DELETE")),
   retryCourse: (id: string) => request<CourseSummary>(`/api/courses/${id}/retry`, json("POST")),
   feed: (id: string) => request<Feed>(`/api/courses/${id}/feed`),
+  ask: (id: string, question: string) => request<AskResult>(`/api/courses/${id}/ask`, json("POST", { question })),
 
   progress: (lessonId: string, body: { completed?: boolean; watched?: boolean }) =>
     request<NonNullable<LessonSummary["progress"]>>(`/api/lessons/${lessonId}/progress`, json("POST", body)),

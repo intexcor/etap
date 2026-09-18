@@ -5,6 +5,7 @@ import { ProgressBar } from "./ui";
 
 export const STATUS_LABEL: Record<CourseSummary["status"], string> = {
   queued: "В очереди",
+  indexing: "Индексирую материал…",
   outlining: "Разбираю материал на темы…",
   generating: "Генерирую уроки…",
   ready: "Готово",
@@ -18,7 +19,7 @@ export const VISIBILITY = {
 } as const;
 
 export function CourseCard({ course, showOwner = false }: { course: CourseSummary; showOwner?: boolean }) {
-  const busy = course.status === "queued" || course.status === "outlining" || course.status === "generating";
+  const busy = course.status === "queued" || course.status === "indexing" || course.status === "outlining" || course.status === "generating";
   const progress = course.progress;
   const Vis = VISIBILITY[course.visibility].icon;
   const done = progress ? progress.completed : 0;

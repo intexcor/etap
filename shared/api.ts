@@ -4,7 +4,7 @@ import type { LessonScene, Quiz, VoiceGender } from "./schema";
 export type User = { id: string; email: string; name: string; createdAt: number };
 
 export type Visibility = "private" | "link" | "public";
-export type CourseStatus = "queued" | "outlining" | "generating" | "ready" | "error";
+export type CourseStatus = "queued" | "indexing" | "outlining" | "generating" | "ready" | "error";
 export type LessonStatus = "pending" | "ready" | "error";
 export type Mp4Status = "queued" | "rendering" | "done" | "error";
 
@@ -37,9 +37,13 @@ export type CourseSummary = {
   isOwner: boolean;
   lessonsTotal: number;
   lessonsReady: number;
+  pages: number;
   /** Только для авторизованного пользователя. */
   progress?: { completed: number; correct: number; answered: number };
 };
+
+export type AskSource = { page: number; text: string; score: number };
+export type AskResult = { answer: string; sources: AskSource[]; mode: "llm" | "extractive" };
 
 export type CourseDetail = CourseSummary & { lessons: LessonSummary[] };
 

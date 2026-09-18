@@ -38,6 +38,11 @@ export const LOCAL_JSON_MODE: "grammar" | "prompt" =
       ? "grammar" // Ollama держит json_schema нативно и быстро
       : "prompt";
 export const LOCAL_MAX_CHARS = Number(process.env.LOCAL_MAX_CHARS ?? 8000);
+/** Эмбеддинги для RAG: llama-server --embedding (npm run embed). Недоступен — лексический поиск. */
+export const EMBED_URL = process.env.EMBED_URL ?? "http://127.0.0.1:8083";
+export const EMBED_MODEL = process.env.EMBED_MODEL ?? "Qwen3-Embedding-0.6B";
+/** Claude получает материал целиком до этого размера; длиннее — RAG-контекст. */
+export const CLAUDE_FULL_DOC_CHARS = Number(process.env.CLAUDE_FULL_DOC_CHARS ?? 200_000);
 export const PYTHON = process.env.PYTHON ?? "python3";
 const SYSTEM_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 

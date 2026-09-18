@@ -6,6 +6,7 @@ import path from "node:path";
 import { z } from "zod";
 import { LOCAL_JSON_MODE, LOCAL_LLM_URL, LOCAL_MAX_CHARS, LOCAL_MODEL } from "./config";
 import { retrieve } from "./extractive";
+import { contextFor } from "./rag";
 import type { Material } from "./generate";
 
 export class LlmUnavailableError extends Error {}
@@ -112,8 +113,9 @@ export async function askLocal<T extends z.ZodType>(
   instruction: string,
   schema: T,
 ): Promise<z.infer<T>> {
-  // Длинный материал не режем по голове, а отбираем куски, релевантные задаче (план / тема урока).
-  const text = retrieve(await materialText(material), instruction, LOCAL_MAX_CHARS);
+  // Длинный материал не режем по голове: RAG-контекст по теме (если курс проиндексирован), иначе лексический retrieval.
+  const rag = material.courseId ? await contextFor(material.courseId, instruction, LOCAL_MAX_CHARS) : null;
+  const text = rag?.text ?? retrieve(await materialText(material), instruction, LOCAL_MAX_CHARS);
   const jsonSchema = constrain(z.toJSONSchema(schema));
   const grammar = LOCAL_JSON_MODE === "grammar";
   const systemPrompt = grammar

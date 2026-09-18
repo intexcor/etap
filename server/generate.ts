@@ -7,9 +7,10 @@ import { extractiveLesson, extractiveOutline } from "./extractive";
 import { askLocal, LlmUnavailableError, materialText } from "./local";
 import { log } from "./log";
 
-export type Material =
-  | { kind: "pdf"; name: string; base64: string }
-  | { kind: "text"; name: string; text: string };
+export type Material = ({ kind: "pdf"; name: string; base64: string } | { kind: "text"; name: string; text: string }) & {
+  /** Есть у курсов из очереди: включает RAG-контекст вместо всего материала. */
+  courseId?: string;
+};
 
 let client: Anthropic | null = null;
 const getClient = () => (client ??= new Anthropic());
