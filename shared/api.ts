@@ -56,6 +56,7 @@ export type FeedLesson = {
   id: string;
   courseId: string;
   courseTitle: string;
+  owner: { id: string; name: string };
   position: number;
   title: string;
   goal: string;

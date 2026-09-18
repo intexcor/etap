@@ -3,11 +3,11 @@ import { Link } from "react-router";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "ghost" | "danger"; to?: string };
 
-const base = "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:opacity-40 disabled:pointer-events-none";
+const base = "inline-flex h-9 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium transition disabled:opacity-40 disabled:pointer-events-none";
 const variants = {
-  primary: "bg-accent text-white hover:bg-[#9b80ff] active:scale-[0.98]",
-  ghost: "border border-line bg-transparent text-text hover:bg-panel-2",
-  danger: "border border-bad/40 bg-bad/10 text-bad hover:bg-bad/20",
+  primary: "bg-text text-bg hover:bg-[#d9d9d9]",
+  ghost: "bg-chip text-text hover:bg-panel-2",
+  danger: "bg-chip text-bad hover:bg-panel-2",
 };
 
 export function Button({ variant = "primary", className = "", to, children, ...rest }: ButtonProps) {
@@ -27,20 +27,20 @@ export function Button({ variant = "primary", className = "", to, children, ...r
 }
 
 export const Card = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
-  <div className={`rounded-2xl border border-line bg-panel p-4 ${className}`}>{children}</div>
+  <div className={`rounded-xl bg-panel p-4 ${className}`}>{children}</div>
 );
 
 export const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input
     {...props}
-    className={`w-full rounded-xl border border-line bg-bg px-3.5 py-2.5 text-sm text-text outline-none placeholder:text-muted/60 focus:border-accent ${props.className ?? ""}`}
+    className={`w-full rounded-lg border border-line bg-[#121212] px-3.5 py-2.5 text-sm text-text outline-none placeholder:text-muted focus:border-accent-2 ${props.className ?? ""}`}
   />
 );
 
 export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
   <select
     {...props}
-    className={`rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-text outline-none focus:border-accent ${props.className ?? ""}`}
+    className={`rounded-lg border border-line bg-[#121212] px-3 py-2.5 text-sm text-text outline-none focus:border-accent-2 ${props.className ?? ""}`}
   />
 );
 
@@ -67,7 +67,7 @@ export const Centered = ({ children }: { children: ReactNode }) => (
 export const Page = ({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) => (
   <div className="mx-auto w-full max-w-3xl px-4 pb-24 pt-6 md:pb-10">
     <div className="mb-5 flex items-center justify-between gap-3">
-      <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
+      <h1 className="text-2xl font-bold">{title}</h1>
       {action}
     </div>
     {children}

@@ -1,18 +1,21 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap");
 
+/* Палитра YouTube dark + акцент TikTok */
 @theme {
-  --color-bg: #0a0b14;
-  --color-panel: #12141f;
-  --color-panel-2: #1a1d2b;
-  --color-line: #262a3d;
-  --color-text: #eef0ff;
-  --color-muted: #9aa0c0;
-  --color-accent: #8b6cff;
-  --color-accent-2: #00c9a7;
-  --color-ok: #2ecc71;
-  --color-bad: #ff5c6c;
-  --color-warn: #ffc93c;
-  --font-sans: Inter, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-bg: #0f0f0f;
+  --color-panel: #212121;
+  --color-panel-2: #3f3f3f;
+  --color-chip: #272727;
+  --color-line: #303030;
+  --color-text: #f1f1f1;
+  --color-muted: #aaaaaa;
+  --color-accent: #fe2c55;
+  --color-accent-2: #3ea6ff;
+  --color-ok: #2ba640;
+  --color-bad: #ff4e45;
+  --color-warn: #f9c74f;
+  --font-sans: Roboto, "YouTube Sans", -apple-system, "Segoe UI", Arial, sans-serif;
 }
 
 html,
@@ -41,13 +44,96 @@ body {
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
 
-/* Безопасные зоны на iPhone */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
 .pt-safe {
   padding-top: env(safe-area-inset-top);
+}
+
+/* Кнопки YouTube: круглая иконка с ховером и «пилюли» */
+.yt-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  color: var(--color-text);
+  transition: background 0.15s;
+}
+.yt-icon:hover {
+  background: var(--color-panel-2);
+}
+.yt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 18px;
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--color-chip);
+  color: var(--color-text);
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.yt-pill:hover {
+  background: var(--color-panel-2);
+}
+.yt-pill-primary {
+  background: var(--color-text);
+  color: #0f0f0f;
+}
+.yt-pill-primary:hover {
+  background: #d9d9d9;
+}
+.yt-chip {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--color-chip);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+.yt-chip:hover {
+  background: var(--color-panel-2);
+}
+.yt-chip-active {
+  background: var(--color-text);
+  color: #0f0f0f;
+}
+
+/* TikTok: круглые действия справа от видео */
+.tt-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.tt-action > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 0.15s;
+}
+.tt-action:hover > span:first-child {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 @keyframes spin {

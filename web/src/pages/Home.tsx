@@ -1,51 +1,55 @@
+// Главная как YouTube: чипы-фильтры, видео-карточки курсов, полка Shorts с уроками.
 import { useQuery } from "@tanstack/react-query";
-import { Play, Upload } from "lucide-react";
+import { Play } from "lucide-react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
+import type { HomeData } from "../../../shared/api";
 import { api } from "../api";
-import { CourseCard } from "../components/CourseCard";
-import { CardGrid, LessonCard, LessonPoster } from "../components/LessonCard";
+import { CourseVideoCard, LessonCard, LessonPoster, ShortsGrid, VideoGrid } from "../components/LessonCard";
 import { Centered, ErrorBox, Spinner } from "../components/ui";
-import { useConfig, useMe } from "../hooks";
+import { useMe } from "../hooks";
 
-const Section = ({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) => (
-  <section className="mb-8">
-    <div className="mb-3 flex items-center justify-between">
-      <h2 className="text-lg font-extrabold">{title}</h2>
-      {action}
-    </div>
-    {children}
-  </section>
+const ShortsLogo = () => (
+  <span className="grid h-6 w-6 place-items-center rounded-md bg-accent">
+    <svg width="12" height="12" viewBox="0 0 10 10" fill="#fff">
+      <path d="M2 1l7 4-7 4z" />
+    </svg>
+  </span>
 );
 
 export function HomePage() {
   const me = useMe();
-  const config = useConfig();
   const home = useQuery({ queryKey: ["home", me.data?.id ?? "guest"], queryFn: api.home });
+  const [chip, setChip] = useState<"all" | "mine" | "new">("all");
+
+  const posters = (d: HomeData) => new Map([...d.latest, ...d.mine].map((l) => [l.courseId, l]));
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-5">
+    <div className="px-4 py-3 md:px-6">
+      <div className="no-scrollbar sticky top-14 z-20 -mx-4 mb-4 flex gap-3 overflow-x-auto bg-bg px-4 py-2 md:-mx-6 md:px-6">
+        {(
+          [
+            ["all", "Все"],
+            ["new", "Новое"],
+            ["mine", "Мои курсы"],
+          ] as const
+        ).map(([k, label]) => (
+          <button key={k} onClick={() => setChip(k)} className={`yt-chip ${chip === k ? "yt-chip-active" : ""}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       {!me.data && (
-        <div className="mb-6 flex flex-col items-start gap-3 rounded-3xl border border-line bg-[radial-gradient(circle_at_10%_0%,rgba(139,108,255,0.25),transparent_50%)] bg-panel p-6 md:flex-row md:items-center md:justify-between">
+        <div className="mb-8 flex flex-col gap-3 rounded-xl bg-panel p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-black tracking-tight md:text-3xl">Учись так, как листаешь ленту</h1>
-            <p className="mt-1 max-w-xl text-sm text-muted">
-              Загрузи конспект или PDF — ETAP разберёт его на короткие ролики с озвучкой, формулами и вопросами. Что не запомнилось, вернётся само.
-            </p>
+            <div className="text-lg font-medium">Загрузи конспект или PDF — получи курс из коротких роликов</div>
+            <div className="text-sm text-muted">Озвучка, формулы, код, вопросы после каждого ролика и повторения по расписанию.</div>
           </div>
-          <div className="flex gap-2">
-            <Link to="/register" className="rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-white">
-              Начать
-            </Link>
-            <Link to="/feed" className="rounded-xl border border-line px-5 py-2.5 text-sm font-semibold">
-              Смотреть ленту
-            </Link>
-          </div>
+          <Link to="/register" className="yt-pill yt-pill-primary shrink-0">
+            Начать
+          </Link>
         </div>
-      )}
-      {config.data && config.data.provider !== "claude" && me.data && (
-        <p className="mb-4 text-xs text-muted">
-          Генерация: {config.data.provider === "none" ? "без LLM, extractive" : `локальная ${config.data.model}`}.
-        </p>
       )}
 
       {home.isPending && (
@@ -56,81 +60,64 @@ export function HomePage() {
       {home.error && <ErrorBox>{home.error.message}</ErrorBox>}
       {home.data && (
         <>
-          {home.data.continue && (
-            <Link
-              to={`/c/${home.data.continue.course.id}#${home.data.continue.lesson.id}`}
-              className="mb-8 flex items-center gap-4 rounded-3xl border border-accent/40 bg-accent/10 p-3 pr-5 hover:bg-accent/15"
-            >
-              <LessonPoster lesson={home.data.continue.lesson} className="h-28 w-16 shrink-0 rounded-xl" />
+          {home.data.continue && chip !== "new" && (
+            <Link to={`/c/${home.data.continue.course.id}#${home.data.continue.lesson.id}`} className="mb-8 flex items-center gap-4 rounded-xl bg-panel p-3 pr-4 hover:bg-[#2a2a2a]">
+              <LessonPoster lesson={home.data.continue.lesson} className="h-24 w-[54px] shrink-0 rounded-lg" />
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold uppercase tracking-widest text-accent">Продолжить</div>
-                <div className="truncate text-lg font-bold">{home.data.continue.lesson.title}</div>
+                <div className="text-xs font-medium uppercase tracking-wide text-muted">Продолжить просмотр</div>
+                <div className="truncate text-base font-medium">{home.data.continue.lesson.title}</div>
                 <div className="truncate text-sm text-muted">
                   {home.data.continue.course.title} · урок {home.data.continue.lesson.position + 1} из {home.data.continue.course.lessonsReady}
                 </div>
               </div>
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-white">
-                <Play size={18} fill="currentColor" />
+              <span className="yt-pill yt-pill-primary">
+                <Play size={16} fill="currentColor" /> Смотреть
               </span>
             </Link>
           )}
 
-          {home.data.mine.length > 0 && (
-            <Section
-              title="Из твоих курсов"
-              action={
-                <Link to="/library" className="text-sm text-accent">
-                  Все курсы →
+          {chip !== "new" && (chip === "mine" ? home.data.mine.length > 0 : home.data.courses.length > 0) && (
+            <VideoGrid>
+              {(chip === "mine" ? [...new Map(home.data.mine.map((l) => [l.courseId, l])).keys()].map((id) => home.data!.courses.find((c) => c.id === id)).filter(Boolean) : home.data.courses).map(
+                (c) => c && <CourseVideoCard key={c.id} course={c} poster={posters(home.data!).get(c.id)} />,
+              )}
+            </VideoGrid>
+          )}
+
+          {(chip === "all" || chip === "new") && (
+            <section className="mt-10 border-t border-line pt-6">
+              <div className="mb-4 flex items-center gap-2">
+                <ShortsLogo />
+                <h2 className="text-xl font-bold">Уроки</h2>
+                <Link to="/feed" className="yt-pill ml-auto">
+                  Смотреть лентой
                 </Link>
-              }
-            >
-              <CardGrid>
-                {home.data.mine.map((l) => (
-                  <LessonCard key={l.id} lesson={l} />
-                ))}
-              </CardGrid>
-            </Section>
+              </div>
+              {home.data.latest.length === 0 ? (
+                <p className="text-sm text-muted">
+                  Публичных уроков пока нет.{" "}
+                  <Link to="/new" className="text-accent-2">
+                    Загрузи материал
+                  </Link>{" "}
+                  и сделай курс публичным.
+                </p>
+              ) : (
+                <ShortsGrid>
+                  {home.data.latest.map((l) => (
+                    <LessonCard key={l.id} lesson={l} />
+                  ))}
+                </ShortsGrid>
+              )}
+            </section>
           )}
 
-          <Section
-            title="Новое"
-            action={
-              <Link to="/feed" className="text-sm text-accent">
-                Смотреть лентой →
+          {chip === "mine" && home.data.mine.length === 0 && (
+            <Centered>
+              <p className="text-sm">У тебя пока нет курсов.</p>
+              <Link to="/new" className="yt-pill yt-pill-primary">
+                Загрузить материал
               </Link>
-            }
-          >
-            {home.data.latest.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-line p-8 text-center text-sm text-muted">
-                Публичных уроков пока нет.{" "}
-                <Link to="/new" className="text-accent">
-                  Загрузи материал
-                </Link>{" "}
-                и сделай курс публичным.
-              </div>
-            ) : (
-              <CardGrid>
-                {home.data.latest.map((l) => (
-                  <LessonCard key={l.id} lesson={l} />
-                ))}
-              </CardGrid>
-            )}
-          </Section>
-
-          {home.data.courses.length > 0 && (
-            <Section title="Курсы">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {home.data.courses.map((c) => (
-                  <CourseCard key={c.id} course={c} showOwner />
-                ))}
-              </div>
-            </Section>
-          )}
-
-          {me.data && (
-            <Link to="/new" className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-line p-5 text-sm text-muted hover:border-accent hover:text-text">
-              <Upload size={16} /> Загрузить свой материал
-            </Link>
+            </Centered>
           )}
         </>
       )}
@@ -143,24 +130,30 @@ export function SearchPage() {
   const query = params.get("q") ?? "";
   const results = useQuery({ queryKey: ["search", query], queryFn: () => api.search(query), enabled: query.length >= 2 });
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-5">
-      <h1 className="mb-4 text-xl font-extrabold">
-        {query ? `«${query}»` : "Поиск"}
-        {results.data && <span className="ml-2 text-sm font-normal text-muted">{results.data.length} уроков</span>}
-      </h1>
+    <div className="mx-auto max-w-[1100px] px-4 py-4 md:px-6">
+      {!query && <p className="text-muted">Введите запрос в строке поиска.</p>}
       {results.isPending && query && (
         <Centered>
           <Spinner />
         </Centered>
       )}
       {results.error && <ErrorBox>{results.error.message}</ErrorBox>}
-      {results.data?.length === 0 && <p className="text-muted">Ничего не нашлось. Ищем по названиям уроков и тексту материалов.</p>}
-      {results.data && (
-        <CardGrid>
+      {results.data?.length === 0 && <p className="text-muted">По запросу «{query}» ничего не найдено.</p>}
+      {results.data && results.data.length > 0 && (
+        <div className="flex flex-col gap-4">
           {results.data.map((l) => (
-            <LessonCard key={l.id} lesson={l} />
+            <Link key={l.id} to={`/c/${l.courseId}#${l.id}`} className="flex gap-4 rounded-xl p-1 hover:bg-panel">
+              <LessonPoster lesson={l} className="h-40 w-[90px] shrink-0 rounded-lg" />
+              <div className="min-w-0 py-1">
+                <div className="text-lg font-normal leading-6">{l.title}</div>
+                <div className="mt-1 text-xs text-muted">
+                  {l.courseTitle} · урок {l.position + 1} из {l.lessonsInCourse} · {l.owner.name}
+                </div>
+                <div className="mt-2 line-clamp-2 text-xs text-muted">{l.scenes[0]?.narration}</div>
+              </div>
+            </Link>
           ))}
-        </CardGrid>
+        </div>
       )}
     </div>
   );

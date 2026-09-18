@@ -211,7 +211,7 @@ export function toCourseDetail(c: CourseRow, userId?: string): CourseDetail {
   return { ...toCourseSummary(c, userId), lessons: listLessonRows(c.id).map((l) => toLessonSummary(l, userId)) };
 }
 
-export function toFeedLesson(l: LessonRow, course: Pick<CourseRow, "id" | "title">, userId?: string): FeedLesson {
+export function toFeedLesson(l: LessonRow, course: Pick<CourseRow, "id" | "title" | "owner_id" | "owner_name">, userId?: string): FeedLesson {
   const scenes = JSON.parse(l.scenes_json) as LessonScene[];
   const quizzes = JSON.parse(l.quizzes_json) as Quiz[];
   const state = userId ? lessonUserState(l, userId) : { completed: false, watched: 0, answers: {}, dueAt: null };
@@ -219,6 +219,7 @@ export function toFeedLesson(l: LessonRow, course: Pick<CourseRow, "id" | "title
     id: l.id,
     courseId: course.id,
     courseTitle: course.title,
+    owner: { id: course.owner_id, name: course.owner_name },
     position: l.position,
     title: l.title,
     goal: l.goal,

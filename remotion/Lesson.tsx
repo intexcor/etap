@@ -204,7 +204,7 @@ export const LessonVideo: React.FC<LessonProps> = ({ lesson, mediaBase, mediaQue
         </Sequence>
       ))}
       <TopBar title={lesson.title} courseTitle={lesson.courseTitle} index={lesson.index} starts={starts} durations={durations} accent={accent} />
-      <div style={{ position: "absolute", right: 60, bottom: 90, fontFamily: FONT, fontSize: 26, fontWeight: 800, color: "rgba(255,255,255,0.35)" }}>
+      <div style={{ position: "absolute", right: 60, top: 150, fontFamily: FONT, fontSize: 26, fontWeight: 900, letterSpacing: 2, color: "rgba(255,255,255,0.4)" }}>
         ETAP
       </div>
     </AbsoluteFill>

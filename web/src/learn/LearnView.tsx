@@ -22,9 +22,18 @@ import {
   Trash2,
   Volume2,
   X,
+  Compass,
+  Home,
+  Library,
+  History,
+  User,
+  Plus,
+  Search,
+  MessageSquareText,
+  Forward,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, NavLink, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ClientQuiz, CourseDetail, FeedLesson, LessonSummary, QuizState } from "../../../shared/api";
 import { LessonVideo } from "../../../remotion/Lesson";
@@ -32,6 +41,7 @@ import { Rich } from "../../../remotion/scenes";
 import { FPS, HEIGHT, WIDTH, lessonFrames } from "../../../remotion/timing";
 import { api } from "../api";
 import { AskPanel } from "../components/AskPanel";
+import { Avatar } from "../components/LessonCard";
 import { STATUS_LABEL, plural } from "../components/CourseCard";
 import { ProgressBar, Select, Spinner, formatDuration } from "../components/ui";
 import { useInvalidateProgress, useMe } from "../hooks";
@@ -59,7 +69,7 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
   const [started, setStarted] = useState(false);
   const [answers, setAnswers] = useState<Record<string, QuizState>>({});
   const [phase, setPhase] = useState<Record<string, Phase>>({});
-  const [panel, setPanel] = useState<"lesson" | "ask">("lesson");
+  const [panel, setPanel] = useState<"lesson" | "ask" | null>(mode === "course" ? "lesson" : null);
   const [sheet, setSheet] = useState<null | "lessons" | "lesson" | "ask">(null);
   const scroller = useRef<HTMLDivElement>(null);
   const players = useRef(new Map<string, PlayerRef>());
@@ -167,11 +177,14 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
       }}
     />
   );
-  const rightPanel = current && (
+  const rightPanel = current && panel && (
     <div className="flex h-full flex-col">
-      <div className="flex gap-1 border-b border-line p-2">
+      <div className="flex items-center border-b border-line">
         <Tab active={panel === "lesson"} onClick={() => setPanel("lesson")} icon={<Info size={15} />} label="Урок" />
         <Tab active={panel === "ask"} onClick={() => setPanel("ask")} icon={<MessageCircleQuestion size={15} />} label="Спросить" />
+        <button onClick={() => setPanel(null)} className="yt-icon mr-1 !h-8 !w-8">
+          <X size={16} />
+        </button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {panel === "lesson" ? (
@@ -185,13 +198,15 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
 
   return (
     <div className="fixed inset-0 z-30 flex bg-bg">
-      <aside className="hidden w-[300px] shrink-0 flex-col border-r border-line bg-panel md:flex">{sidebar}</aside>
+      <aside className={`hidden shrink-0 flex-col border-r border-line md:flex ${mode === "course" ? "w-[300px] bg-panel" : "w-60 bg-bg"}`}>
+        {mode === "course" ? sidebar : <FeedNav mode={mode} count={lessons.length} />}
+      </aside>
 
       <div className="relative min-w-0 flex-1 bg-black">
         <div ref={scroller} className="snap-feed h-full overflow-y-auto">
           {slides.map((slide, index) => (
             <section key={slide.key} className="snap-slide flex h-[100dvh] items-center justify-center" data-index={index}>
-              <div className="relative aspect-[9/16] h-[100dvh] max-w-[100vw] overflow-hidden bg-bg md:h-[calc(100dvh-32px)] md:rounded-3xl">
+              <div className="relative aspect-[9/16] h-[100dvh] max-w-[100vw] overflow-hidden bg-[#161616] md:h-[calc(100dvh-24px)] md:rounded-2xl">
                 {slide.kind === "lesson" ? (
                   Math.abs(index - active) <= 1 ? (
                     <LessonSlide
@@ -208,7 +223,8 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
                       onAnswer={(i, picked) => answer(slide.lesson, i, picked)}
                       onRewatch={() => rewatch(slide.lesson)}
                       onNext={next}
-                      onOpen={(s) => setSheet(s)}
+                      onOpen={(s) => (window.matchMedia("(min-width: 1024px)").matches ? setPanel(s) : setSheet(s))}
+                      showCourse={mode !== "course"}
                     />
                   ) : (
                     <div className="grid h-full place-items-center px-6 text-center text-muted">{slide.lesson.title}</div>
@@ -246,7 +262,7 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
         {!started && current && (
           <button
             onClick={start}
-            className="absolute bottom-[14%] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-accent px-7 py-3.5 text-base font-extrabold text-white shadow-[0_10px_40px_rgba(139,108,255,0.45)]"
+            className="absolute bottom-[16%] left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-accent px-6 py-3 text-base font-semibold text-white shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
           >
             <Volume2 size={20} /> Смотреть со звуком
           </button>
@@ -280,7 +296,7 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
         )}
       </div>
 
-      <aside className="hidden w-[360px] shrink-0 border-l border-line bg-panel lg:block">{rightPanel}</aside>
+      {panel && <aside className="hidden w-[380px] shrink-0 border-l border-line bg-bg lg:block">{rightPanel}</aside>}
     </div>
   );
 }
@@ -288,7 +304,7 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
 const Tab = ({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: ReactNode; label: string }) => (
   <button
     onClick={onClick}
-    className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-semibold ${active ? "bg-accent/15 text-accent" : "text-muted hover:text-text"}`}
+    className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 py-3 text-sm font-semibold ${active ? "border-text text-text" : "border-transparent text-muted hover:text-text"}`}
   >
     {icon} {label}
   </button>
@@ -303,6 +319,49 @@ const Arrow = ({ children, onClick, disabled }: { children: ReactNode; onClick: 
     {children}
   </button>
 );
+
+/** Левая навигация ленты, как на десктопном TikTok. */
+function FeedNav({ mode, count }: { mode: "feed" | "review"; count: number }) {
+  const items = [
+    { to: "/feed", label: "Для тебя", icon: Compass },
+    { to: "/", label: "Главная", icon: Home },
+    { to: "/library", label: "Мои курсы", icon: Library },
+    { to: "/review", label: "Повтор", icon: History },
+    { to: "/profile", label: "Профиль", icon: User },
+  ];
+  return (
+    <div className="flex h-full flex-col px-3 py-3">
+      <Link to="/" className="mb-4 flex items-center gap-1.5 px-2 text-[20px] font-black tracking-tight">
+        <span className="grid h-5 w-7 place-items-center rounded-[5px] bg-accent">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="#fff">
+            <path d="M2 1l7 4-7 4z" />
+          </svg>
+        </span>
+        ETAP
+      </Link>
+      <Link to="/search" className="mb-3 flex h-10 items-center gap-2 rounded-full bg-chip px-4 text-sm text-muted">
+        <Search size={16} /> Поиск
+      </Link>
+      <nav className="flex flex-col">
+        {items.map((t) => (
+          <NavLink
+            key={t.to}
+            to={t.to}
+            end={t.to === "/"}
+            className={({ isActive }) => `flex h-11 items-center gap-3 rounded-lg px-2 text-[17px] font-bold ${isActive ? "text-accent" : "text-text hover:bg-chip"}`}
+          >
+            <t.icon size={24} strokeWidth={2} /> {t.label}
+            {t.to === "/review" && mode === "review" && <span className="ml-auto text-xs font-medium text-muted">{count}</span>}
+          </NavLink>
+        ))}
+      </nav>
+      <Link to="/new" className="mt-4 flex h-11 items-center justify-center gap-2 rounded-lg border border-accent text-[15px] font-bold text-accent hover:bg-accent/10">
+        <Plus size={18} /> Загрузить
+      </Link>
+      <p className="mt-auto px-2 text-xs text-muted">© {new Date().getFullYear()} ETAP</p>
+    </div>
+  );
+}
 
 function Sidebar({
   title,
@@ -563,6 +622,7 @@ function LessonSlide({
   onRewatch,
   onNext,
   onOpen,
+  showCourse,
 }: {
   lesson: FeedLesson;
   courseTitle?: string;
@@ -578,6 +638,7 @@ function LessonSlide({
   onRewatch: () => void;
   onNext: () => void;
   onOpen: (s: "lesson" | "ask") => void;
+  showCourse: boolean;
 }) {
   const ref = useRef<PlayerRef>(null);
   const [frame, setFrame] = useState(0);
@@ -640,20 +701,55 @@ function LessonSlide({
         )}
       </div>
 
-      <div className="absolute bottom-4 right-3 z-10 flex gap-2">
-        <Dock title="Об уроке" onClick={() => onOpen("lesson")} className="lg:hidden">
-          <Info size={16} />
-        </Dock>
-        <Dock title="Спросить материал" onClick={() => onOpen("ask")} className="lg:hidden">
-          <MessageCircleQuestion size={16} />
-        </Dock>
-        <Dock title="Сначала" onClick={onRewatch}>
-          <RotateCcw size={16} />
-        </Dock>
+      {/* Подпись слева снизу и колонка действий справа — как в TikTok */}
+      <div className="pointer-events-none absolute bottom-6 left-3 right-16 z-10 text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
+        <div className="text-[15px] font-bold">@{lesson.owner.name}</div>
+        <div className="mt-0.5 line-clamp-2 text-sm">{lesson.title}</div>
+        {showCourse && <div className="mt-0.5 truncate text-sm font-semibold">#{lesson.courseTitle.replace(/\s+/g, "_").slice(0, 40)}</div>}
+      </div>
+      <div className="absolute bottom-6 right-2 z-10 flex flex-col items-center gap-4">
+        <div className="relative mb-1">
+          <Avatar name={lesson.owner.name} size={44} className="border-2 border-white" />
+          <span className="absolute -bottom-2 left-1/2 grid h-5 w-5 -translate-x-1/2 place-items-center rounded-full bg-accent text-white">
+            <Plus size={12} strokeWidth={3} />
+          </span>
+        </div>
+        <button className="tt-action" onClick={() => onOpen("lesson")} title="Об уроке">
+          <span>
+            <Info size={26} />
+          </span>
+          {lesson.quizzes.length > 0 ? `${lesson.quizzes.length} вопр.` : "урок"}
+        </button>
+        <button className="tt-action" onClick={() => onOpen("ask")} title="Спросить материал">
+          <span>
+            <MessageSquareText size={26} />
+          </span>
+          Спросить
+        </button>
+        <button className="tt-action" onClick={onRewatch} title="Сначала">
+          <span>
+            <RotateCcw size={24} />
+          </span>
+          Сначала
+        </button>
+        <button
+          className="tt-action"
+          title="Поделиться"
+          onClick={() => {
+            const url = `${location.origin}/c/${lesson.courseId}#${lesson.id}`;
+            if (navigator.share) void navigator.share({ title: lesson.title, url }).catch(() => {});
+            else void navigator.clipboard.writeText(url);
+          }}
+        >
+          <span>
+            <Forward size={26} />
+          </span>
+          Поделиться
+        </button>
         {started && (
-          <Dock title={playing ? "Пауза" : "Играть"} onClick={() => ref.current?.toggle()}>
-            {playing ? <Pause size={16} /> : <Play size={16} />}
-          </Dock>
+          <button className="tt-action" onClick={() => ref.current?.toggle()} title={playing ? "Пауза" : "Играть"}>
+            <span>{playing ? <Pause size={24} /> : <Play size={24} />}</span>
+          </button>
         )}
       </div>
       <div className="absolute inset-x-0 bottom-0 h-[3px] bg-white/15">
@@ -666,12 +762,6 @@ function LessonSlide({
     </>
   );
 }
-
-const Dock = ({ children, className = "", ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-  <button className={`grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur ${className}`} {...rest}>
-    {children}
-  </button>
-);
 
 /** Квиз поверх досмотренного ролика: вопрос за вопросом, потом «следующий урок». */
 function QuizOverlay({
@@ -772,7 +862,7 @@ function QuizOverlay({
               ↺ Пересмотреть
             </button>
             {state && (
-              <button onClick={() => setIndex(index + 1)} className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white">
+              <button onClick={() => setIndex(index + 1)} className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white">
                 {index + 1 < lesson.quizzes.length ? "Следующий вопрос" : "Готово"}
               </button>
             )}
@@ -795,12 +885,12 @@ function QuizOverlay({
               ↺ Пересмотреть
             </button>
             {!isLast && (
-              <button onClick={onNext} className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white">
+              <button onClick={onNext} className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white">
                 Следующий урок {countdown !== null && countdown > 0 && `· ${countdown}`}
               </button>
             )}
             {isLast && (
-              <button onClick={onNext} className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white">
+              <button onClick={onNext} className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white">
                 Итоги
               </button>
             )}

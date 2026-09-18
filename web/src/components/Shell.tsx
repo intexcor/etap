@@ -1,20 +1,25 @@
-// Оболочка платформы: верхняя панель с поиском, слева навигация, снизу вкладки на телефоне.
-import { Home, Library, Play, Plus, RotateCcw, Search, User } from "lucide-react";
+// Оболочка в духе YouTube: шапка с гайдом-бургером, логотипом, пилюлей поиска; слева гайд с иконками;
+// на телефоне — нижняя панель вкладок.
+import { Clock, Compass, History, Home, Library, Menu, Play, Plus, Search, User, Video } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useNavigate, useSearchParams } from "react-router";
-import { useMe, useReview } from "../hooks";
+import { useCourses, useMe, useReview } from "../hooks";
 
 const nav = [
   { to: "/", label: "Главная", icon: Home, end: true },
   { to: "/feed", label: "Лента", icon: Play },
   { to: "/library", label: "Мои курсы", icon: Library },
-  { to: "/review", label: "Повтор", icon: RotateCcw },
+  { to: "/review", label: "Повтор", icon: History },
   { to: "/profile", label: "Профиль", icon: User },
 ];
 
-export const Logo = ({ className = "" }: { className?: string }) => (
-  <Link to="/" className={`flex items-center gap-2 text-xl font-black tracking-tight ${className}`}>
-    <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-sm text-white">E</span>
+export const Logo = () => (
+  <Link to="/" className="flex items-center gap-1.5 text-[20px] font-black tracking-tight text-text">
+    <span className="grid h-5 w-7 place-items-center rounded-[5px] bg-accent">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="#fff">
+        <path d="M2 1l7 4-7 4z" />
+      </svg>
+    </span>
     ETAP
   </Link>
 );
@@ -22,85 +27,114 @@ export const Logo = ({ className = "" }: { className?: string }) => (
 export function Shell({ children }: { children?: ReactNode }) {
   const me = useMe();
   const review = useReview();
+  const courses = useCourses();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? "");
+  const [wide, setWide] = useState(true);
   const due = me.data ? (review.data?.dueCount ?? 0) : 0;
+  const search = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim().length >= 2) navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+  };
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-bg/90 px-4 backdrop-blur">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 bg-bg px-4">
+        <button onClick={() => setWide((w) => !w)} className="yt-icon hidden md:grid" aria-label="Меню">
+          <Menu size={22} />
+        </button>
         <Logo />
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (query.trim().length >= 2) navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-          }}
-          className="mx-auto flex w-full max-w-xl items-center gap-2 rounded-full border border-line bg-panel px-3"
-        >
-          <Search size={16} className="shrink-0 text-muted" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Искать уроки…"
-            className="h-9 w-full bg-transparent text-sm outline-none placeholder:text-muted/60"
-          />
+        <form onSubmit={search} className="mx-auto hidden w-full max-w-[640px] items-center sm:flex">
+          <div className="flex h-10 flex-1 items-center rounded-l-full border border-line bg-[#121212] pl-4 focus-within:border-accent-2">
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Введите запрос" className="w-full bg-transparent text-base outline-none placeholder:text-muted" />
+          </div>
+          <button className="grid h-10 w-16 place-items-center rounded-r-full border border-l-0 border-line bg-chip hover:bg-panel-2" aria-label="Найти">
+            <Search size={20} />
+          </button>
         </form>
-        <div className="flex shrink-0 items-center gap-2">
-          <Link to="/new" className="hidden items-center gap-1.5 rounded-full bg-accent px-3.5 py-2 text-sm font-semibold text-white sm:flex">
-            <Plus size={16} /> Создать
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <Link to="/search" className="yt-icon sm:hidden" aria-label="Поиск">
+            <Search size={22} />
+          </Link>
+          <Link to="/new" className="yt-pill">
+            <Video size={20} /> <span className="hidden sm:inline">Создать</span>
           </Link>
           {me.data ? (
-            <Link to="/profile" className="grid h-9 w-9 place-items-center rounded-full bg-accent/20 text-sm font-bold text-accent" title={me.data.name}>
+            <Link to="/profile" className="grid h-8 w-8 place-items-center rounded-full bg-accent-2 text-sm font-bold text-bg" title={me.data.name}>
               {me.data.name.slice(0, 1).toUpperCase()}
             </Link>
           ) : (
-            <Link to="/login" className="rounded-full border border-line px-3.5 py-2 text-sm font-semibold">
-              Войти
+            <Link to="/login" className="flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-sm font-medium text-accent-2 hover:bg-[#263850]">
+              <User size={18} /> Войти
             </Link>
           )}
         </div>
       </header>
 
       <div className="flex flex-1">
-        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-56 shrink-0 flex-col border-r border-line px-3 py-4 md:flex">
-          <nav className="flex flex-col gap-1">
+        <aside className={`sticky top-14 hidden h-[calc(100dvh-3.5rem)] shrink-0 flex-col overflow-y-auto no-scrollbar md:flex ${wide ? "w-60 px-3" : "w-[72px] px-1"}`}>
+          <nav className="flex flex-col gap-0.5 py-2">
             {nav.map((t) => (
               <NavLink
                 key={t.to}
                 to={t.to}
                 end={t.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive ? "bg-accent/15 text-accent" : "text-muted hover:bg-panel-2 hover:text-text"}`
+                  wide
+                    ? `flex h-10 items-center gap-5 rounded-[10px] px-3 text-sm ${isActive ? "bg-chip font-medium" : "hover:bg-chip"}`
+                    : `flex flex-col items-center gap-1.5 rounded-[10px] py-3 text-[10px] ${isActive ? "font-medium" : ""} hover:bg-chip`
                 }
               >
-                <t.icon size={18} />
+                <t.icon size={wide ? 22 : 24} strokeWidth={1.6} />
                 {t.label}
-                {t.to === "/review" && due > 0 && <span className="ml-auto rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-white">{due}</span>}
+                {t.to === "/review" && due > 0 && wide && <span className="ml-auto rounded-full bg-accent px-1.5 text-[11px] font-bold text-white">{due}</span>}
               </NavLink>
             ))}
           </nav>
-          <Link to="/new" className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-dashed border-line px-3 py-2.5 text-sm text-muted hover:border-accent hover:text-text">
-            <Plus size={16} /> Загрузить материал
-          </Link>
+          {wide && me.data && (courses.data?.length ?? 0) > 0 && (
+            <>
+              <div className="my-2 border-t border-line" />
+              <div className="px-3 pb-1 pt-2 text-base font-medium">Курсы</div>
+              <nav className="flex flex-col gap-0.5">
+                {courses.data!.slice(0, 8).map((c) => (
+                  <NavLink key={c.id} to={`/c/${c.id}`} className="flex h-10 items-center gap-4 rounded-[10px] px-3 text-sm hover:bg-chip">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-panel-2 text-[11px] font-bold">{c.title.slice(0, 1)}</span>
+                    <span className="truncate">{c.title}</span>
+                    {c.status !== "ready" && <Clock size={12} className="ml-auto shrink-0 text-muted" />}
+                  </NavLink>
+                ))}
+              </nav>
+            </>
+          )}
+          {wide && (
+            <>
+              <div className="my-2 border-t border-line" />
+              <Link to="/new" className="flex h-10 items-center gap-5 rounded-[10px] px-3 text-sm hover:bg-chip">
+                <Plus size={22} strokeWidth={1.6} /> Загрузить материал
+              </Link>
+              <Link to="/feed" className="flex h-10 items-center gap-5 rounded-[10px] px-3 text-sm hover:bg-chip">
+                <Compass size={22} strokeWidth={1.6} /> Обзор
+              </Link>
+              <p className="mt-auto px-3 py-4 text-xs text-muted">© {new Date().getFullYear()} ETAP</p>
+            </>
+          )}
         </aside>
 
-        <main className="min-w-0 flex-1 pb-20 md:pb-0">{children ?? <Outlet />}</main>
+        <main className="min-w-0 flex-1 pb-16 md:pb-0">{children ?? <Outlet />}</main>
       </div>
 
-      <nav className="pb-safe fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-panel/95 backdrop-blur md:hidden">
+      <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-bg md:hidden">
         {nav.map((t) => (
           <NavLink
             key={t.to}
             to={t.to}
             end={t.end}
-            className={({ isActive }) => `relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${isActive ? "text-accent" : "text-muted"}`}
+            className={({ isActive }) => `relative flex flex-col items-center gap-0.5 py-1.5 text-[10px] ${isActive ? "font-medium" : "text-muted"}`}
           >
-            <t.icon size={20} />
+            <t.icon size={24} strokeWidth={1.6} />
             {t.label}
-            {t.to === "/review" && due > 0 && (
-              <span className="absolute right-1/4 top-1 rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{due}</span>
-            )}
+            {t.to === "/review" && due > 0 && <span className="absolute right-1/4 top-0.5 rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{due}</span>}
           </NavLink>
         ))}
       </nav>
