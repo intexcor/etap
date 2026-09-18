@@ -71,6 +71,10 @@ PDF читается через `pdftotext`, материал обрезаетс
 иначе Remotion скачает `chrome-headless-shell` (~95 МБ). Вручную: `REMOTION_BROWSER_EXECUTABLE=/path/to/chrome`.
 Remotion бесплатен для физлиц и компаний до 3 человек, дальше нужна лицензия.
 
+## Эксперименты
+
+`experiments/etap-pdf-lesson/` — прототип Eremeow «PDF → минутный урок» (Remotion + Ollama `qwen2.5:1.5b`, ветка `eremey`). Автономный проект со своим `package.json`: `cd experiments/etap-pdf-lesson && npm i && npm run web`.
+
 ## Переменные
 
 `ANTHROPIC_API_KEY`, `LEARNTOK_MODEL` (`claude-opus-5`), `LEARNTOK_PROVIDER`, `PORT` (8787), `PUBLIC_URL` (для secure-cookie за https),

@@ -6,3 +6,5 @@ models
 node_modules
 data/logs
 .venv
+experiments/etap-pdf-lesson/out
+experiments/etap-pdf-lesson/public/generated
