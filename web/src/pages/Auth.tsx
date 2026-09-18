@@ -38,7 +38,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
     <div className="flex min-h-full items-center justify-center px-4 py-10">
       <form onSubmit={submit} className="w-full max-w-sm rounded-3xl border border-line bg-panel p-6">
         <div className="mb-1 text-2xl font-extrabold tracking-tight">
-          Learn<span className="text-accent">Tok</span>
+          <span className="mr-2 inline-grid h-7 w-7 place-items-center rounded-lg bg-accent align-middle text-sm text-white">E</span>ETAP
         </div>
         <p className="mb-6 text-sm text-muted">{mode === "login" ? "Войди, чтобы продолжить учиться" : "Создай аккаунт — прогресс и повторения будут сохраняться"}</p>
         <div className="flex flex-col gap-3">

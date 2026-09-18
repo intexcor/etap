@@ -205,7 +205,7 @@ export const LessonVideo: React.FC<LessonProps> = ({ lesson, mediaBase, mediaQue
       ))}
       <TopBar title={lesson.title} courseTitle={lesson.courseTitle} index={lesson.index} starts={starts} durations={durations} accent={accent} />
       <div style={{ position: "absolute", right: 60, bottom: 90, fontFamily: FONT, fontSize: 26, fontWeight: 800, color: "rgba(255,255,255,0.35)" }}>
-        Learn<span style={{ color: accent }}>Tok</span>
+        ETAP
       </div>
     </AbsoluteFill>
   );

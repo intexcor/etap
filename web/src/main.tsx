@@ -8,8 +8,9 @@ import { Centered, Spinner } from "./components/ui";
 import { useMe } from "./hooks";
 import { AuthPage } from "./pages/Auth";
 import { CourseLearnPage, ReviewPage } from "./pages/Learn";
-import { LandingPage } from "./pages/Landing";
-import { ExplorePage, LibraryPage } from "./pages/Library";
+import { FeedPage } from "./pages/Feed";
+import { HomePage, SearchPage } from "./pages/Home";
+import { LibraryPage } from "./pages/Library";
 import { NewCoursePage } from "./pages/NewCourse";
 import { ProfilePage } from "./pages/Profile";
 import "./styles.css";
@@ -42,36 +43,30 @@ function FeedRedirect() {
   return <Navigate to={pathname.replace(/\/feed$/, "") + hash} replace />;
 }
 
-/** Главная: лендинг для гостей, библиотека для вошедших. */
-function Home() {
-  const me = useMe();
-  if (me.isPending) {
-    return (
-      <Centered>
-        <Spinner />
-      </Centered>
-    );
-  }
-  return me.data ? (
-    <Shell>
-      <LibraryPage />
-    </Shell>
-  ) : (
-    <LandingPage />
-  );
-}
-
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route path="/register" element={<AuthPage mode="register" />} />
       {/* Экран обучения без оболочки — со своими панелями. Курсы по ссылке доступны без входа. */}
       <Route path="/c/:id" element={<CourseLearnPage />} />
       <Route path="/c/:id/feed" element={<FeedRedirect />} />
+      <Route
+        path="/feed"
+        element={<FeedPage />}
+      />
       <Route element={<Shell />}>
-        <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/explore" element={<Navigate to="/" replace />} />
+        <Route
+          path="/library"
+          element={
+            <RequireAuth>
+              <LibraryPage />
+            </RequireAuth>
+          }
+        />
         <Route
           path="/new"
           element={

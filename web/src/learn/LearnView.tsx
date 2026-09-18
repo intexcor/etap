@@ -45,12 +45,14 @@ export type LearnViewProps = {
   /** Слайд в конце: итоги / статус генерации. */
   tail: ReactNode;
   startAt?: string;
-  mode: "course" | "review";
+  mode: "course" | "review" | "feed";
+  /** Лента: вызывается, когда до конца остаётся пара роликов. */
+  onNearEnd?: () => void;
 };
 
 type Phase = "watch" | "quiz" | "done";
 
-export function LearnView({ title, backTo, lessons, course, tail, startAt, mode }: LearnViewProps) {
+export function LearnView({ title, backTo, lessons, course, tail, startAt, mode, onNearEnd }: LearnViewProps) {
   const me = useMe();
   const invalidate = useInvalidateProgress();
   const [active, setActive] = useState(0);
@@ -145,6 +147,9 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode 
   }
 
   const next = () => goTo(Math.min(active + 1, slides.length - 1));
+  useEffect(() => {
+    if (onNearEnd && active >= slides.length - 3) onNearEnd();
+  }, [active, slides.length, onNearEnd]);
   const lessonIndex = current ? lessons.findIndex((l) => l.id === current.id) : -1;
 
   const sidebar = (
@@ -191,7 +196,7 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode 
                   Math.abs(index - active) <= 1 ? (
                     <LessonSlide
                       lesson={slide.lesson}
-                      courseTitle={mode === "review" ? slide.lesson.courseTitle : undefined}
+                      courseTitle={mode !== "course" ? slide.lesson.courseTitle : undefined}
                       active={index === active}
                       started={started}
                       players={players.current}
@@ -312,7 +317,7 @@ function Sidebar({
   backTo: string;
   course?: CourseDetail;
   lessons: FeedLesson[];
-  mode: "course" | "review";
+  mode: "course" | "review" | "feed";
   activeId: string | null;
   onPick: (id: string) => void;
 }) {
@@ -350,7 +355,7 @@ function Sidebar({
     <div className="flex h-full flex-col">
       <div className="border-b border-line p-4">
         <Link to={backTo} className="mb-3 inline-flex items-center gap-1.5 text-xs text-muted hover:text-text">
-          <ArrowLeft size={14} /> {mode === "review" ? "К курсам" : "Мои курсы"}
+          <ArrowLeft size={14} /> {mode === "course" ? "Мои курсы" : "На главную"}
         </Link>
         <h1 className="text-base font-extrabold leading-snug">{title}</h1>
         {course && (
@@ -453,7 +458,7 @@ function Sidebar({
                     {status === "ready" && (
                       <>
                         {formatDuration(l.duration)} · {(isFeed ? l.quizzes.length : l.quizCount) || "без"} {plural(isFeed ? l.quizzes.length : l.quizCount, "вопрос", "вопроса", "вопросов")}
-                        {mode === "review" && isFeed && ` · ${l.courseTitle}`}
+                        {mode !== "course" && isFeed && ` · ${l.courseTitle}`}
                       </>
                     )}
                   </span>

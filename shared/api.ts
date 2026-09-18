@@ -69,6 +69,31 @@ export type FeedLesson = {
 
 export type Feed = { course: CourseSummary; lessons: FeedLesson[] };
 
+/** Карточка ролика в сетке: сцены нужны для превью-кадра на клиенте. */
+export type LessonCard = {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  position: number;
+  lessonsInCourse: number;
+  title: string;
+  duration: number;
+  quizCount: number;
+  owner: { id: string; name: string };
+  createdAt: number;
+  scenes: LessonScene[];
+  completed?: boolean;
+};
+
+export type HomeData = {
+  continue: { course: CourseSummary; lesson: LessonCard } | null;
+  latest: LessonCard[];
+  mine: LessonCard[];
+  courses: CourseSummary[];
+};
+
+export type GlobalFeed = { lessons: FeedLesson[]; nextCursor: string | null };
+
 export type ReviewFeed = { due: FeedLesson[]; dueCount: number; nextDueAt: number | null };
 
 export type AnswerResult = QuizState & { review: { dueAt: number; intervalDays: number } | null };

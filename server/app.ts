@@ -7,6 +7,7 @@ import { LOCAL_MODEL, MODEL, PROVIDER, REGISTRATION_OPEN, ROOT } from "./config"
 import { errorHandler, notFoundHandler } from "./errors";
 import { authRouter } from "./routes/auth";
 import { coursesRouter } from "./routes/courses";
+import { discoverRouter } from "./routes/discover";
 import { lessonsRouter } from "./routes/lessons";
 import { mediaRouter } from "./routes/media";
 
@@ -26,7 +27,7 @@ export function createApp() {
     res.json(config);
   });
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
-  app.use("/api", authRouter, coursesRouter, lessonsRouter);
+  app.use("/api", authRouter, coursesRouter, lessonsRouter, discoverRouter);
   app.use(mediaRouter);
   app.use("/api", notFoundHandler);
 

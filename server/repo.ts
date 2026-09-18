@@ -1,5 +1,6 @@
 // Запросы к БД и сборка DTO.
 import type {
+  LessonCard,
   CourseDetail,
   CourseStatus,
   CourseSummary,
@@ -35,6 +36,7 @@ export type CourseRow = {
 
 export type LessonRow = {
   id: string;
+  updated_at: number;
   course_id: string;
   position: number;
   title: string;
@@ -227,4 +229,67 @@ export function toFeedLesson(l: LessonRow, course: Pick<CourseRow, "id" | "title
     mp4: mp4Of(l),
     progress: { completed: state.completed, watched: state.watched, answers: state.answers },
   };
+}
+
+
+export function toLessonCard(l: LessonRow, course: CourseRow, userId?: string): LessonCard {
+  const scenes = JSON.parse(l.scenes_json) as LessonScene[];
+  const quizzes = JSON.parse(l.quizzes_json) as Quiz[];
+  const completed = userId
+    ? !!q.get("select 1 from lesson_progress where user_id = ? and lesson_id = ? and completed_at is not null", userId, l.id)
+    : undefined;
+  return {
+    id: l.id,
+    courseId: course.id,
+    courseTitle: course.title,
+    position: l.position,
+    lessonsInCourse: course.lessons_ready,
+    title: l.title,
+    duration: l.duration,
+    quizCount: quizzes.length,
+    owner: { id: course.owner_id, name: course.owner_name },
+    createdAt: l.updated_at,
+    scenes: scenes.map((s) => (s.audio ? { ...s, audio: { ...s.audio, src: `/media/${course.id}/${s.audio.src}` } } : s)),
+    completed,
+  };
+}
+
+/** Готовые уроки публичных курсов (и своих, если userId), новые первыми; cursor — updated_at последнего. */
+export function listLessonsForFeed(userId: string | undefined, limit: number, before?: number): { lesson: LessonRow; course: CourseRow }[] {
+  const rows = q.all<LessonRow & { updated_at: number }>(
+    `select l.* from lessons l join courses c on c.id = l.course_id
+     where l.status = 'ready' and (c.visibility = 'public' ${userId ? "or c.owner_id = ?" : ""}) and l.updated_at < ?
+     order by l.updated_at desc limit ?`,
+    ...(userId ? [userId] : []),
+    before ?? Number.MAX_SAFE_INTEGER,
+    limit,
+  );
+  const courses = new Map<string, CourseRow>();
+  return rows.flatMap((lesson) => {
+    const course = courses.get(lesson.course_id) ?? getCourseRow(lesson.course_id);
+    if (!course) return [];
+    courses.set(course.id, course);
+    return [{ lesson, course }];
+  });
+}
+
+export function searchLessons(query: string, userId: string | undefined, limit = 30): { lesson: LessonRow; course: CourseRow }[] {
+  const like = `%${query.replace(/[%_]/g, " ").trim()}%`;
+  const rows = q.all<LessonRow>(
+    `select distinct l.* from lessons l join courses c on c.id = l.course_id
+     left join chunks ch on ch.course_id = c.id and ch.text like ?
+     where l.status = 'ready' and (c.visibility = 'public' ${userId ? "or c.owner_id = ?" : ""})
+       and (l.title like ? or l.goal like ? or c.title like ? or ch.id is not null)
+     order by l.updated_at desc limit ?`,
+    like,
+    ...(userId ? [userId] : []),
+    like,
+    like,
+    like,
+    limit,
+  );
+  return rows.flatMap((lesson) => {
+    const course = getCourseRow(lesson.course_id);
+    return course ? [{ lesson, course }] : [];
+  });
 }

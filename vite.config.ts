@@ -13,8 +13,8 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       manifest: {
-        name: "LearnTok",
-        short_name: "LearnTok",
+        name: "ETAP",
+        short_name: "ETAP",
         description: "Короткие обучающие ролики из любого материала",
         theme_color: "#0a0b14",
         background_color: "#0a0b14",

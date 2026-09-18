@@ -1,4 +1,4 @@
-import type { AnswerResult, AppConfig, AskResult, CourseDetail, CourseSummary, Feed, LessonSummary, ReviewFeed, Stats, User } from "../../shared/api";
+import type { AnswerResult, AppConfig, AskResult, CourseDetail, CourseSummary, Feed, GlobalFeed, HomeData, LessonCard, LessonSummary, ReviewFeed, Stats, User } from "../../shared/api";
 
 export class ApiError extends Error {
   constructor(
@@ -36,6 +36,9 @@ export const api = {
   updateMe: (body: { name: string }) => request<User>("/api/me", json("PATCH", body)),
   stats: () => request<Stats>("/api/me/stats"),
 
+  home: () => request<HomeData>("/api/home"),
+  globalFeed: (cursor?: string) => request<GlobalFeed>(`/api/feed?limit=10${cursor ? `&cursor=${cursor}` : ""}`),
+  search: (q: string) => request<LessonCard[]>(`/api/search?q=${encodeURIComponent(q)}`),
   courses: () => request<CourseSummary[]>("/api/courses"),
   explore: () => request<CourseSummary[]>("/api/explore"),
   course: (id: string) => request<CourseDetail>(`/api/courses/${id}`),

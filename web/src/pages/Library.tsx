@@ -2,7 +2,7 @@ import { Play, Plus } from "lucide-react";
 import { Link } from "react-router";
 import { CourseCard } from "../components/CourseCard";
 import { Button, Centered, ErrorBox, Notice, Page, Spinner } from "../components/ui";
-import { useConfig, useCourses, useExplore } from "../hooks";
+import { useConfig, useCourses } from "../hooks";
 
 export function LibraryPage() {
   const courses = useCourses();
@@ -36,7 +36,7 @@ export function LibraryPage() {
         <Centered>
           <div className="text-5xl">🎬</div>
           <div className="text-lg font-bold text-text">Пока пусто</div>
-          <p className="max-w-xs text-sm">Загрузи конспект, лекцию или главу учебника — получишь ленту коротких роликов с озвучкой и квизами.</p>
+          <p className="max-w-xs text-sm">Загрузи конспект, лекцию или главу учебника — получишь курс из коротких роликов с озвучкой и вопросами.</p>
           <Button to="/new">Создать первый курс</Button>
         </Centered>
       )}
@@ -58,27 +58,6 @@ export function LibraryPage() {
         ) : null;
       })()}
       <div className="grid gap-3 sm:grid-cols-2">{courses.data?.map((c) => <CourseCard key={c.id} course={c} />)}</div>
-    </Page>
-  );
-}
-
-export function ExplorePage() {
-  const explore = useExplore();
-  return (
-    <Page title="Публичные курсы">
-      {explore.isPending && (
-        <Centered>
-          <Spinner />
-        </Centered>
-      )}
-      {explore.error && <ErrorBox>{explore.error.message}</ErrorBox>}
-      {explore.data?.length === 0 && (
-        <Centered>
-          <div className="text-5xl">🌍</div>
-          <p className="max-w-xs text-sm">Публичных курсов ещё нет. Сделай свой курс публичным в его настройках — он появится здесь.</p>
-        </Centered>
-      )}
-      <div className="grid gap-3 sm:grid-cols-2">{explore.data?.map((c) => <CourseCard key={c.id} course={c} showOwner />)}</div>
     </Page>
   );
 }
