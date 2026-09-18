@@ -9,14 +9,6 @@ import { CourseVideoCard, LessonCard, LessonPoster, ShortsGrid, VideoGrid } from
 import { Centered, ErrorBox, Spinner } from "../components/ui";
 import { useMe } from "../hooks";
 
-const ShortsLogo = () => (
-  <span className="grid h-6 w-6 place-items-center rounded-md bg-accent">
-    <svg width="12" height="12" viewBox="0 0 10 10" fill="#fff">
-      <path d="M2 1l7 4-7 4z" />
-    </svg>
-  </span>
-);
-
 export function HomePage() {
   const me = useMe();
   const home = useQuery({ queryKey: ["home", me.data?.id ?? "guest"], queryFn: api.home });
@@ -87,8 +79,7 @@ export function HomePage() {
           {(chip === "all" || chip === "new") && (
             <section className="mt-10 border-t border-line pt-6">
               <div className="mb-4 flex items-center gap-2">
-                <ShortsLogo />
-                <h2 className="text-xl font-bold">Уроки</h2>
+                <h2 className="text-xl font-bold">Свежие уроки</h2>
                 <Link to="/feed" className="yt-pill ml-auto">
                   Смотреть лентой
                 </Link>

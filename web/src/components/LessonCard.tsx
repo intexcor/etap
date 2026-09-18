@@ -28,14 +28,19 @@ export function LessonPoster({ lesson, className = "", frame = 45 }: { lesson: P
   );
 }
 
-export const Avatar = ({ name, size = 36, className = "" }: { name: string; size?: number; className?: string }) => (
-  <span
-    className={`grid shrink-0 place-items-center rounded-full bg-[#4a6fa5] font-medium text-white ${className}`}
-    style={{ width: size, height: size, fontSize: size * 0.42 }}
-  >
-    {name.slice(0, 1).toUpperCase()}
-  </span>
-);
+const AVATAR_COLORS = ["#c2410c", "#0e7490", "#4d7c0f", "#7e22ce", "#b45309", "#be185d", "#1d4ed8", "#047857"];
+export const Avatar = ({ name, size = 36, className = "" }: { name: string; size?: number; className?: string }) => {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return (
+    <span
+      className={`grid shrink-0 place-items-center rounded-full font-semibold text-white ${className}`}
+      style={{ width: size, height: size, fontSize: size * 0.42, background: AVATAR_COLORS[h % AVATAR_COLORS.length] }}
+    >
+      {name.slice(0, 1).toUpperCase()}
+    </span>
+  );
+};
 
 export function timeAgo(ts: number) {
   const d = (Date.now() - ts) / 1000;

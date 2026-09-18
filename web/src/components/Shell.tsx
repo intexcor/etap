@@ -1,6 +1,7 @@
-// Оболочка в духе YouTube: шапка с гайдом-бургером, логотипом, пилюлей поиска; слева гайд с иконками;
+// Единая оболочка: шапка с поиском, слева меню и список курсов, справа контент (в т.ч. плеер);
 // на телефоне — нижняя панель вкладок.
-import { Clock, Compass, History, Home, Library, Menu, Play, Plus, Search, User, Video } from "lucide-react";
+import { Clock, History, Home, Library, Menu, Play, Plus, Search, User } from "lucide-react";
+import { Avatar } from "./LessonCard";
 import { useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useNavigate, useSearchParams } from "react-router";
 import { useCourses, useMe, useReview } from "../hooks";
@@ -13,12 +14,17 @@ const nav = [
   { to: "/profile", label: "Профиль", icon: User },
 ];
 
+/** Знак — три ступени: этап за этапом. */
+export const Mark = ({ size = 22 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M3 20h6v-6h6V8h6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 export const Logo = () => (
-  <Link to="/" className="flex items-center gap-1.5 text-[20px] font-black tracking-tight text-text">
-    <span className="grid h-5 w-7 place-items-center rounded-[5px] bg-accent">
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="#fff">
-        <path d="M2 1l7 4-7 4z" />
-      </svg>
+  <Link to="/" className="flex items-center gap-1.5 text-[19px] font-extrabold tracking-tight text-text">
+    <span className="text-accent">
+      <Mark />
     </span>
     ETAP
   </Link>
@@ -45,28 +51,24 @@ export function Shell({ children }: { children?: ReactNode }) {
           <Menu size={22} />
         </button>
         <Logo />
-        <form onSubmit={search} className="mx-auto hidden w-full max-w-[640px] items-center sm:flex">
-          <div className="flex h-10 flex-1 items-center rounded-l-full border border-line bg-[#121212] pl-4 focus-within:border-accent-2">
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Введите запрос" className="w-full bg-transparent text-base outline-none placeholder:text-muted" />
-          </div>
-          <button className="grid h-10 w-16 place-items-center rounded-r-full border border-l-0 border-line bg-chip hover:bg-panel-2" aria-label="Найти">
-            <Search size={20} />
-          </button>
+        <form onSubmit={search} className="mx-auto hidden h-10 w-full max-w-[560px] items-center gap-2 rounded-full border border-line bg-[#141414] px-4 focus-within:border-accent sm:flex">
+          <Search size={18} className="shrink-0 text-muted" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Найти урок или тему" className="w-full bg-transparent text-[15px] outline-none placeholder:text-muted" />
         </form>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <Link to="/search" className="yt-icon sm:hidden" aria-label="Поиск">
             <Search size={22} />
           </Link>
-          <Link to="/new" className="yt-pill">
-            <Video size={20} /> <span className="hidden sm:inline">Создать</span>
+          <Link to="/new" className="yt-pill yt-pill-primary">
+            <Plus size={18} /> <span className="hidden sm:inline">Загрузить</span>
           </Link>
           {me.data ? (
-            <Link to="/profile" className="grid h-8 w-8 place-items-center rounded-full bg-accent-2 text-sm font-bold text-bg" title={me.data.name}>
-              {me.data.name.slice(0, 1).toUpperCase()}
+            <Link to="/profile" title={me.data.name}>
+              <Avatar name={me.data.name} size={32} />
             </Link>
           ) : (
-            <Link to="/login" className="flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-sm font-medium text-accent-2 hover:bg-[#263850]">
-              <User size={18} /> Войти
+            <Link to="/login" className="yt-pill">
+              Войти
             </Link>
           )}
         </div>
@@ -98,8 +100,8 @@ export function Shell({ children }: { children?: ReactNode }) {
               <div className="px-3 pb-1 pt-2 text-base font-medium">Курсы</div>
               <nav className="flex flex-col gap-0.5">
                 {courses.data!.slice(0, 8).map((c) => (
-                  <NavLink key={c.id} to={`/c/${c.id}`} className="flex h-10 items-center gap-4 rounded-[10px] px-3 text-sm hover:bg-chip">
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-panel-2 text-[11px] font-bold">{c.title.slice(0, 1)}</span>
+                  <NavLink key={c.id} to={`/c/${c.id}`} className={({ isActive }) => `flex h-10 items-center gap-4 rounded-[10px] px-3 text-sm hover:bg-chip ${isActive ? "bg-chip font-medium" : ""}`}>
+                    <Avatar name={c.title} size={24} />
                     <span className="truncate">{c.title}</span>
                     {c.status !== "ready" && <Clock size={12} className="ml-auto shrink-0 text-muted" />}
                   </NavLink>
@@ -112,9 +114,6 @@ export function Shell({ children }: { children?: ReactNode }) {
               <div className="my-2 border-t border-line" />
               <Link to="/new" className="flex h-10 items-center gap-5 rounded-[10px] px-3 text-sm hover:bg-chip">
                 <Plus size={22} strokeWidth={1.6} /> Загрузить материал
-              </Link>
-              <Link to="/feed" className="flex h-10 items-center gap-5 rounded-[10px] px-3 text-sm hover:bg-chip">
-                <Compass size={22} strokeWidth={1.6} /> Обзор
               </Link>
               <p className="mt-auto px-3 py-4 text-xs text-muted">© {new Date().getFullYear()} ETAP</p>
             </>

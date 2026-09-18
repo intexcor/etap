@@ -48,14 +48,19 @@ function App() {
     <Routes>
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route path="/register" element={<AuthPage mode="register" />} />
-      {/* Экран обучения без оболочки — со своими панелями. Курсы по ссылке доступны без входа. */}
-      <Route path="/c/:id" element={<CourseLearnPage />} />
-      <Route path="/c/:id/feed" element={<FeedRedirect />} />
-      <Route
-        path="/feed"
-        element={<FeedPage />}
-      />
       <Route element={<Shell />}>
+        {/* Курсы по ссылке доступны без входа. */}
+        <Route path="/c/:id" element={<CourseLearnPage />} />
+        <Route path="/c/:id/feed" element={<FeedRedirect />} />
+        <Route path="/feed" element={<FeedPage />} />
+        <Route
+          path="/review"
+          element={
+            <RequireAuth>
+              <ReviewPage />
+            </RequireAuth>
+          }
+        />
         <Route path="/" element={<HomePage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/explore" element={<Navigate to="/" replace />} />
@@ -84,14 +89,6 @@ function App() {
           }
         />
       </Route>
-      <Route
-        path="/review"
-        element={
-          <RequireAuth>
-            <ReviewPage />
-          </RequireAuth>
-        }
-      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

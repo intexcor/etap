@@ -22,18 +22,13 @@ import {
   Trash2,
   Volume2,
   X,
-  Compass,
-  Home,
-  Library,
-  History,
-  User,
   Plus,
-  Search,
   MessageSquareText,
   Forward,
+  ListVideo,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, NavLink, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ClientQuiz, CourseDetail, FeedLesson, LessonSummary, QuizState } from "../../../shared/api";
 import { LessonVideo } from "../../../remotion/Lesson";
@@ -69,7 +64,7 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
   const [started, setStarted] = useState(false);
   const [answers, setAnswers] = useState<Record<string, QuizState>>({});
   const [phase, setPhase] = useState<Record<string, Phase>>({});
-  const [panel, setPanel] = useState<"lesson" | "ask" | null>(mode === "course" ? "lesson" : null);
+  const [panel, setPanel] = useState<"lessons" | "lesson" | "ask" | null>(mode === "feed" ? null : "lessons");
   const [sheet, setSheet] = useState<null | "lessons" | "lesson" | "ask">(null);
   const scroller = useRef<HTMLDivElement>(null);
   const players = useRef(new Map<string, PlayerRef>());
@@ -177,36 +172,39 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
       }}
     />
   );
-  const rightPanel = current && panel && (
+  const rightPanel = panel && (
     <div className="flex h-full flex-col">
       <div className="flex items-center border-b border-line">
+        <Tab active={panel === "lessons"} onClick={() => setPanel("lessons")} icon={<ListVideo size={15} />} label={mode === "course" ? "Курс" : mode === "review" ? "Повтор" : "Лента"} />
         <Tab active={panel === "lesson"} onClick={() => setPanel("lesson")} icon={<Info size={15} />} label="Урок" />
         <Tab active={panel === "ask"} onClick={() => setPanel("ask")} icon={<MessageCircleQuestion size={15} />} label="Спросить" />
-        <button onClick={() => setPanel(null)} className="yt-icon mr-1 !h-8 !w-8">
+        <button onClick={() => setPanel(null)} className="yt-icon mr-1 !h-8 !w-8" title="Скрыть панель">
           <X size={16} />
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {panel === "lesson" ? (
-          <LessonInfo lesson={current} answers={answers} />
-        ) : (
-          <AskPanel courseId={current.courseId} canAsk={!!me.data} pages={course?.pages ?? 0} embedded />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {panel === "lessons" && sidebar}
+        {panel === "lesson" && current && (
+          <div className="p-4">
+            <LessonInfo lesson={current} answers={answers} />
+          </div>
+        )}
+        {panel === "ask" && current && (
+          <div className="p-4">
+            <AskPanel courseId={current.courseId} canAsk={!!me.data} pages={course?.pages ?? 0} embedded />
+          </div>
         )}
       </div>
     </div>
   );
 
   return (
-    <div className="fixed inset-0 z-30 flex bg-bg">
-      <aside className={`hidden shrink-0 flex-col border-r border-line md:flex ${mode === "course" ? "w-[300px] bg-panel" : "w-60 bg-bg"}`}>
-        {mode === "course" ? sidebar : <FeedNav mode={mode} count={lessons.length} />}
-      </aside>
-
-      <div className="relative min-w-0 flex-1 bg-black">
+    <div className="flex h-[calc(100dvh-3.5rem-3.5rem)] bg-bg md:h-[calc(100dvh-3.5rem)]">
+      <div className="relative min-w-0 flex-1">
         <div ref={scroller} className="snap-feed h-full overflow-y-auto">
           {slides.map((slide, index) => (
-            <section key={slide.key} className="snap-slide flex h-[100dvh] items-center justify-center" data-index={index}>
-              <div className="relative aspect-[9/16] h-[100dvh] max-w-[100vw] overflow-hidden bg-[#161616] md:h-[calc(100dvh-24px)] md:rounded-2xl">
+            <section key={slide.key} className="snap-slide flex h-full items-center justify-center" data-index={index}>
+              <div className="relative aspect-[9/16] h-full max-w-full overflow-hidden bg-[#161616] md:h-[calc(100%-24px)] md:rounded-2xl">
                 {slide.kind === "lesson" ? (
                   Math.abs(index - active) <= 1 ? (
                     <LessonSlide
@@ -223,7 +221,7 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
                       onAnswer={(i, picked) => answer(slide.lesson, i, picked)}
                       onRewatch={() => rewatch(slide.lesson)}
                       onNext={next}
-                      onOpen={(s) => (window.matchMedia("(min-width: 1024px)").matches ? setPanel(s) : setSheet(s))}
+                      onOpen={(s) => (window.matchMedia("(min-width: 1024px)").matches ? setPanel((p) => (p === s ? null : s)) : setSheet(s))}
                       showCourse={mode !== "course"}
                     />
                   ) : (
@@ -236,17 +234,6 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
             </section>
           ))}
         </div>
-
-        {/* Верхняя плашка на телефоне */}
-        <header className="pt-safe pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center gap-2 px-3 py-2 md:hidden">
-          <Link to={backTo} className="pointer-events-auto grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white backdrop-blur">
-            <ArrowLeft size={18} />
-          </Link>
-          <button onClick={() => setSheet("lessons")} className="pointer-events-auto min-w-0 truncate rounded-full bg-black/45 px-3 py-1.5 text-xs text-white/85 backdrop-blur">
-            {title}
-            {lessonIndex >= 0 && ` · ${lessonIndex + 1}/${lessons.length}`}
-          </button>
-        </header>
 
         {/* Стрелки на десктопе */}
         <div className="pointer-events-none absolute inset-y-0 right-4 z-10 hidden flex-col items-center justify-center gap-2 md:flex">
@@ -270,7 +257,7 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
 
         {/* Шторка на телефоне */}
         {sheet && (
-          <div className="absolute inset-0 z-20 flex flex-col justify-end bg-black/60 md:hidden" onClick={() => setSheet(null)}>
+          <div className="absolute inset-0 z-20 flex flex-col justify-end bg-black/60 lg:hidden" onClick={() => setSheet(null)}>
             <div className="max-h-[80%] overflow-hidden rounded-t-3xl border-t border-line bg-panel" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between px-4 pt-3">
                 <div className="h-1 w-10 rounded-full bg-line" />
@@ -297,6 +284,11 @@ export function LearnView({ title, backTo, lessons, course, tail, startAt, mode,
       </div>
 
       {panel && <aside className="hidden w-[380px] shrink-0 border-l border-line bg-bg lg:block">{rightPanel}</aside>}
+      {!panel && (
+        <button onClick={() => setPanel("lessons")} className="yt-icon absolute right-3 top-3 z-10 hidden bg-black/50 lg:grid" title="Панель">
+          <ListVideo size={20} />
+        </button>
+      )}
     </div>
   );
 }
@@ -319,49 +311,6 @@ const Arrow = ({ children, onClick, disabled }: { children: ReactNode; onClick: 
     {children}
   </button>
 );
-
-/** Левая навигация ленты, как на десктопном TikTok. */
-function FeedNav({ mode, count }: { mode: "feed" | "review"; count: number }) {
-  const items = [
-    { to: "/feed", label: "Для тебя", icon: Compass },
-    { to: "/", label: "Главная", icon: Home },
-    { to: "/library", label: "Мои курсы", icon: Library },
-    { to: "/review", label: "Повтор", icon: History },
-    { to: "/profile", label: "Профиль", icon: User },
-  ];
-  return (
-    <div className="flex h-full flex-col px-3 py-3">
-      <Link to="/" className="mb-4 flex items-center gap-1.5 px-2 text-[20px] font-black tracking-tight">
-        <span className="grid h-5 w-7 place-items-center rounded-[5px] bg-accent">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="#fff">
-            <path d="M2 1l7 4-7 4z" />
-          </svg>
-        </span>
-        ETAP
-      </Link>
-      <Link to="/search" className="mb-3 flex h-10 items-center gap-2 rounded-full bg-chip px-4 text-sm text-muted">
-        <Search size={16} /> Поиск
-      </Link>
-      <nav className="flex flex-col">
-        {items.map((t) => (
-          <NavLink
-            key={t.to}
-            to={t.to}
-            end={t.to === "/"}
-            className={({ isActive }) => `flex h-11 items-center gap-3 rounded-lg px-2 text-[17px] font-bold ${isActive ? "text-accent" : "text-text hover:bg-chip"}`}
-          >
-            <t.icon size={24} strokeWidth={2} /> {t.label}
-            {t.to === "/review" && mode === "review" && <span className="ml-auto text-xs font-medium text-muted">{count}</span>}
-          </NavLink>
-        ))}
-      </nav>
-      <Link to="/new" className="mt-4 flex h-11 items-center justify-center gap-2 rounded-lg border border-accent text-[15px] font-bold text-accent hover:bg-accent/10">
-        <Plus size={18} /> Загрузить
-      </Link>
-      <p className="mt-auto px-2 text-xs text-muted">© {new Date().getFullYear()} ETAP</p>
-    </div>
-  );
-}
 
 function Sidebar({
   title,
@@ -413,9 +362,6 @@ function Sidebar({
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-line p-4">
-        <Link to={backTo} className="mb-3 inline-flex items-center gap-1.5 text-xs text-muted hover:text-text">
-          <ArrowLeft size={14} /> {mode === "course" ? "Мои курсы" : "На главную"}
-        </Link>
         <h1 className="text-base font-extrabold leading-snug">{title}</h1>
         {course && (
           <div className="mt-1 text-xs text-muted">
@@ -637,7 +583,7 @@ function LessonSlide({
   onAnswer: (index: number, picked: number) => Promise<void>;
   onRewatch: () => void;
   onNext: () => void;
-  onOpen: (s: "lesson" | "ask") => void;
+  onOpen: (s: "lessons" | "lesson" | "ask") => void;
   showCourse: boolean;
 }) {
   const ref = useRef<PlayerRef>(null);
@@ -702,7 +648,7 @@ function LessonSlide({
       </div>
 
       {/* Подпись слева снизу и колонка действий справа — как в TikTok */}
-      <div className="pointer-events-none absolute bottom-6 left-3 right-16 z-10 text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
+      <div className="pointer-events-none absolute bottom-6 left-3 right-[72px] z-10 text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
         <div className="text-[15px] font-bold">@{lesson.owner.name}</div>
         <div className="mt-0.5 line-clamp-2 text-sm">{lesson.title}</div>
         {showCourse && <div className="mt-0.5 truncate text-sm font-semibold">#{lesson.courseTitle.replace(/\s+/g, "_").slice(0, 40)}</div>}
@@ -714,6 +660,12 @@ function LessonSlide({
             <Plus size={12} strokeWidth={3} />
           </span>
         </div>
+        <button className="tt-action" onClick={() => onOpen("lessons")} title="Список уроков">
+          <span>
+            <ListVideo size={26} />
+          </span>
+          Уроки
+        </button>
         <button className="tt-action" onClick={() => onOpen("lesson")} title="Об уроке">
           <span>
             <Info size={26} />
