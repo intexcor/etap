@@ -20,7 +20,7 @@ export function createApp() {
   app.get("/api/config", (_req, res) => {
     const config: AppConfig = {
       provider: PROVIDER,
-      model: PROVIDER === "local" ? LOCAL_MODEL : MODEL,
+      model: PROVIDER === "claude" ? MODEL : PROVIDER === "none" ? "extractive" : LOCAL_MODEL,
       registrationOpen: REGISTRATION_OPEN,
     };
     res.json(config);

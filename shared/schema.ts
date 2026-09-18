@@ -61,6 +61,12 @@ export const SceneSchema = z.union([
     solution: z.string(),
   }),
   z.object({
+    type: z.literal("keypoint"),
+    narration,
+    number: z.number().int().describe("Порядковый номер идеи, с 1"),
+    text: z.string().describe("Одна ключевая идея, до 18 слов"),
+  }),
+  z.object({
     type: z.literal("summary"),
     narration,
     text: z.string().describe("Главная мысль, до 15 слов"),

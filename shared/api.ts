@@ -80,7 +80,7 @@ export type Stats = {
   days: { date: string; lessons: number; answers: number }[];
 };
 
-export type AppConfig = { provider: "claude" | "local"; model: string; registrationOpen: boolean };
+export type AppConfig = { provider: "claude" | "local" | "ollama" | "none"; model: string; registrationOpen: boolean };
 
 /** Полный квиз хранится только на сервере. */
 export type StoredQuiz = Quiz;

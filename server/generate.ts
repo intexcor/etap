@@ -2,8 +2,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { z } from "zod";
 import { LessonDraftSchema, OutlineSchema, type LessonDraft, type Outline } from "../shared/schema";
-import { MODEL, PROVIDER } from "./config";
-import { askLocal } from "./local";
+import { LLM_FALLBACK, MODEL, PROVIDER } from "./config";
+import { extractiveLesson, extractiveOutline } from "./extractive";
+import { askLocal, LlmUnavailableError, materialText } from "./local";
+import { log } from "./log";
 
 export type Material =
   | { kind: "pdf"; name: string; base64: string }
@@ -40,7 +42,7 @@ function materialBlock(m: Material): Anthropic.Beta.BetaContentBlockParam {
 }
 
 async function ask<T extends z.ZodType>(material: Material, instruction: string, schema: T): Promise<z.infer<T>> {
-  if (PROVIDER === "local") return askLocal(SYSTEM, material, instruction, schema);
+  if (PROVIDER === "local" || PROVIDER === "ollama") return askLocal(SYSTEM, material, instruction, schema);
   const response = await getClient().beta.messages.parse({
     model: MODEL,
     max_tokens: 16000,
@@ -59,7 +61,27 @@ async function ask<T extends z.ZodType>(material: Material, instruction: string,
   return response.parsed_output;
 }
 
+/** Без LLM (provider=none) или когда локальная модель недоступна — extractive-выжимка из прототипа ETAP. */
+async function withFallback<T>(material: Material, llm: () => Promise<T>, extractive: (text: string) => T): Promise<T> {
+  if (PROVIDER === "none") return extractive(await materialText(material));
+  try {
+    return await llm();
+  } catch (e) {
+    if (!(e instanceof LlmUnavailableError) || !LLM_FALLBACK) throw e;
+    log.warn({ err: e.message }, "LLM недоступна — extractive-выжимка");
+    return extractive(await materialText(material));
+  }
+}
+
 export function generateOutline(material: Material, lessons: number | "auto"): Promise<Outline> {
+  return withFallback(material, () => llmOutline(material, lessons), (text) => extractiveOutline(text, material.name, lessons));
+}
+
+export function generateLesson(material: Material, outline: Outline, index: number): Promise<LessonDraft> {
+  return withFallback(material, () => llmLesson(material, outline, index), (text) => extractiveLesson(text, outline, index));
+}
+
+function llmOutline(material: Material, lessons: number | "auto"): Promise<Outline> {
   const auto = PROVIDER === "local" ? "от 3 до 5" : "от 3 до 10 (сколько нужно по объёму материала)";
   const count = lessons === "auto" ? auto : `ровно ${lessons}`;
   return ask(
@@ -73,7 +95,7 @@ export function generateOutline(material: Material, lessons: number | "auto"): P
   );
 }
 
-export function generateLesson(material: Material, outline: Outline, index: number): Promise<LessonDraft> {
+function llmLesson(material: Material, outline: Outline, index: number): Promise<LessonDraft> {
   const concept = outline.concepts[index];
   const plan = outline.concepts
     .map((c, i) => `${i + 1}. ${c.title}${i === index ? "   ← этот ролик" : ""}`)
@@ -91,7 +113,7 @@ ${plan}
 Сцены:
 - 4–7 сцен; суммарно в озвучке 90–150 слов (35–60 секунд).
 - Первая сцена — hook, последняя — summary.
-- Тип сцены выбирай по содержанию: формула — formula (валидный KaTeX), код — code (до 12 строк, до 38 символов в строке, язык как в материале), процесс или алгоритм — steps, противопоставление — compare, задача с решением — example, ключевой термин — definition, перечисление — bullets.
+- Тип сцены выбирай по содержанию: формула — formula (валидный KaTeX), код — code (до 12 строк, до 38 символов в строке, язык как в материале), процесс или алгоритм — steps, противопоставление — compare, задача с решением — example, ключевой термин — definition, перечисление — bullets, одна крупная мысль с номером — keypoint.
 - В текстовых полях на экране короткие формулы можно вставлять как $...$ (KaTeX).
 - Экранный текст короткий и крупный: заголовки до 6 слов, пункты до 8 слов.
 - Озвучка пригодна для синтеза речи: без LaTeX, кода, markdown и сокращений; формулы и код проговаривай словами.

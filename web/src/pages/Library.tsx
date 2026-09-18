@@ -16,9 +16,13 @@ export function LibraryPage() {
         </Button>
       }
     >
-      {config.data?.provider === "local" && (
+      {config.data && config.data.provider !== "claude" && (
         <div className="mb-4">
-          <Notice>Мок-режим: сценарии пишет локальная {config.data.model}. Качество низкое, материал обрезается до ~8000 символов.</Notice>
+          <Notice>
+            {config.data.provider === "none"
+              ? "Режим без LLM: уроки собираются extractive-выжимкой из материала, без квизов."
+              : `Мок-режим: сценарии пишет локальная ${config.data.model}. Качество ниже, чем у Claude.`}
+          </Notice>
         </div>
       )}
       {courses.isPending && (

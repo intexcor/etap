@@ -5,7 +5,10 @@ import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
 import { LOCAL_JSON_MODE, LOCAL_LLM_URL, LOCAL_MAX_CHARS, LOCAL_MODEL } from "./config";
+import { retrieve } from "./extractive";
 import type { Material } from "./generate";
+
+export class LlmUnavailableError extends Error {}
 
 // Грамматика llama.cpp по этим лимитам не даёт маленькой модели зациклиться
 // на бесконечном массиве или строке.
@@ -70,7 +73,7 @@ function constrain(node: unknown, key?: string): unknown {
 
 const textCache = new WeakMap<Material, Promise<string>>();
 
-function materialText(material: Material): Promise<string> {
+export function materialText(material: Material): Promise<string> {
   let cached = textCache.get(material);
   if (!cached) {
     cached = extractText(material);
@@ -98,8 +101,7 @@ async function extractText(material: Material): Promise<string> {
   }
   text = text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   if (!text) throw new Error("В материале не нашлось текста (скан PDF без текстового слоя?)");
-  // У 0.6B маленький контекст на слот — длинный материал режем.
-  return text.length > LOCAL_MAX_CHARS ? `${text.slice(0, LOCAL_MAX_CHARS)}\n[…материал обрезан]` : text;
+  return text;
 }
 
 type ChatResponse = { choices: { message: { content: string | null }; finish_reason: string }[] };
@@ -110,7 +112,8 @@ export async function askLocal<T extends z.ZodType>(
   instruction: string,
   schema: T,
 ): Promise<z.infer<T>> {
-  const text = await materialText(material);
+  // Длинный материал не режем по голове, а отбираем куски, релевантные задаче (план / тема урока).
+  const text = retrieve(await materialText(material), instruction, LOCAL_MAX_CHARS);
   const jsonSchema = constrain(z.toJSONSchema(schema));
   const grammar = LOCAL_JSON_MODE === "grammar";
   const systemPrompt = grammar
@@ -141,7 +144,7 @@ export async function askLocal<T extends z.ZodType>(
         }),
       });
     } catch {
-      throw new Error(`Локальная модель недоступна на ${LOCAL_LLM_URL} — запусти npm run llm`);
+      throw new LlmUnavailableError(`Локальная модель недоступна на ${LOCAL_LLM_URL} — запусти npm run llm`);
     }
 
     if (!res.ok) {

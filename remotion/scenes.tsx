@@ -306,6 +306,22 @@ export const SceneView: React.FC<{ scene: LessonScene; accent: string; durationI
       );
       break;
 
+    case "keypoint":
+      body = (
+        <>
+          <Appear at={0} style={{ fontSize: 34, color: "rgba(255,255,255,0.7)", marginBottom: 20 }}>
+            Ключевая идея {scene.number}
+          </Appear>
+          <Appear at={4} style={{ fontSize: 190, fontWeight: 900, lineHeight: 1, color: "#f5d264", marginBottom: 34 }}>
+            {String(scene.number).padStart(2, "0")}
+          </Appear>
+          <Appear at={12} style={{ fontSize: fit(scene.text.length, 70, 80, 46), fontWeight: 750, lineHeight: 1.16, letterSpacing: -1 }}>
+            <Rich text={scene.text} />
+          </Appear>
+        </>
+      );
+      break;
+
     case "summary":
       body = (
         <div style={{ textAlign: "center" }}>

@@ -13,7 +13,7 @@ purgeExpiredSessions();
 startWorker();
 
 const server = createApp().listen(PORT, () => {
-  log.info({ port: PORT, generation: PROVIDER === "local" ? LOCAL_MODEL : MODEL }, "LearnTok API started");
+  log.info({ port: PORT, generation: PROVIDER === "claude" ? MODEL : PROVIDER === "none" ? "extractive (без LLM)" : `${PROVIDER}:${LOCAL_MODEL}` }, "LearnTok API started");
 });
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
