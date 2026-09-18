@@ -27,7 +27,10 @@
     "dev": "remotion studio",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "lesson": "node scripts/create-lesson.mjs",
+    "render:lesson": "remotion render src/index.ts LessonFromPdf out/lesson.mp4 --props=public/generated/lesson.json",
+    "web": "node scripts/server.mjs"
   },
   "sideEffects": [
     "*.css"

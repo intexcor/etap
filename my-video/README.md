@@ -1,3 +1,21 @@
+# ETAP: PDF → минутный урок
+
+Тестовый конвейер берёт PDF, извлекает текст, отбирает релевантные фрагменты и делает JSON-сценарий для универсального вертикального ролика Remotion. По умолчанию используется локальная компактная LLM `qwen2.5:1.5b` через Ollama. Без запущенной LLM создаётся extractive-выжимка — конвейер можно проверить без ключей и облака.
+
+## Быстрый запуск
+
+```console
+ollama pull qwen2.5:1.5b
+npm run lesson -- --input /полный/путь/к/материалу.pdf
+npm run render:lesson
+```
+
+Либо запустите `npm run web` и откройте `http://localhost:4173`: тестовая страница примет PDF и вернёт готовые props JSON. Затем сохраните их в `public/generated/lesson.json` и выполните рендер.
+
+Результат: `public/generated/lesson.json` и `out/lesson.mp4`. Модель можно сменить: `OLLAMA_MODEL=qwen2.5:3b npm run lesson -- --input material.pdf`.
+
+Для текстовых PDF рекомендуется `pdftotext` (Poppler); сканированные сначала требуют OCR. Retrieval MVP — лексический; в production его следует заменить эмбеддингами, векторным хранилищем и ссылками на страницы.
+
 # Remotion video
 
 <p align="center">

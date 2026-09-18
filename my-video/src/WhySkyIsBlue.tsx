@@ -83,7 +83,6 @@ const ProgressDots: React.FC<{ total: number; active: number }> = ({
           height: 10,
           borderRadius: 6,
           background: i === active ? "white" : "rgba(255,255,255,0.35)",
-          transition: "none",
         }}
       />
     ))}
@@ -511,7 +510,7 @@ const Scene7Outro: React.FC = () => {
 export const WhySkyIsBlue: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
-      <Sequence from={0} durationInFrames={90}>
+      <Sequence durationInFrames={90}>
         <Scene1Hook />
       </Sequence>
       <Sequence from={90} durationInFrames={100}>
